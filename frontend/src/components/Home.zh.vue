@@ -5,7 +5,7 @@
 
             <h1 class="text-center"> 🔑 使用唯一通行短语登录</h1>
 
-            <input type="text" id="phrase" ref="query" placeholder="例如: correct horse battery staple"
+            <input type="text" id="phrase" ref="query" placeholder="例如: note"
                    autocomplete="off"
                    autocapitalize="off" @keydown.enter="login" v-model="phrase" :disabled="isBusy">
 
