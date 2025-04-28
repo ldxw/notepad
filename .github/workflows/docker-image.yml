@@ -47,6 +47,6 @@ jobs:
           push: true
           tags: |
             docker.io/ldxw/notepad:latest
-            docker.io/ldocker.io/dxw/notepad:${{ steps.time.outputs.formatted_time }}
+            docker.io/ldxw/notepad:${{ steps.time.outputs.formatted_time }}
             ghcr.io/ldxw/notepad:latest
             ghcr.io/ldxw/notepad:${{ steps.time.outputs.formatted_time }}
