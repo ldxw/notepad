@@ -52,7 +52,7 @@ const webpackConfig = {
     plugins: [
         new VueLoaderPlugin(),
         new HtmlWebpackPlugin({
-            title: "Notepad.mx",
+            title: "note.ldxw.top",
             template: "public/index.html",
             inject: true,
             minify: false,

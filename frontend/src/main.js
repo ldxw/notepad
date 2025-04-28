@@ -1,5 +1,5 @@
 import {createApp} from 'vue'
-import App from './components/App.vue'
+import App from './components/App.zh.vue'
 
 import './sass/app.scss';
 import store from "./store";
