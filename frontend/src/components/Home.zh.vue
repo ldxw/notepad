@@ -66,7 +66,7 @@
             <p>除此之外，笔记在存储前会通过客户端加密（使用通行短语生成密钥），
                 服务器仅存储密文。你可通过以下链接下载所有服务器存储的笔记：
                 <br>
-                <a href="https://notepad.mx/archive.tar.gz" target="_blank">https://notepad.mx/archive.tar.gz</a>
+                <a href="/archive.tar.gz" target="_blank">archive.tar.gz</a>
             </p>
 
             <p>
