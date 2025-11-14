@@ -8,6 +8,15 @@ COPY frontend/package.json ./frontend/
 RUN npm install --prefix ./backend/
 RUN npm install --prefix ./frontend/
 
+ENV VUE_APP_META_DESCRIPTION="小窝笔记,自动加密的网页版记事本,无需注册." \
+    VUE_APP_META_KEYWORDS="小窝笔记, 云记事本, 在线记事本, 带密码的在线记事本, 加密记事本, 网页版记事本, 网络记事本, 在线写字板, 在线文本编辑器, 网页记事本, SimpleNote 替代品, Standard Notes 替代品" \
+    VUE_APP_PAGE_TITLE="小窝笔记 - 在线存储您的笔记" \
+    VUE_APP_COMPONENT_TITLE="note.ldxw.top" \
+    VUE_APP_APP_KEY="note.ldxw.top" \
+    VUE_APP_H3_TITLE="在线储存您的笔记" \
+    VUE_APP_FAVICON_URL="https://fastly.jsdelivr.net/gh/ldxw/cdn@master/logo/svg/logo/32x32/favicon.ico"
+
+RUN cd frontend && npm run build
 
 FROM node:20-alpine3.18 as vue-build
 # FROM node:20-bullseye as vue-build
@@ -16,6 +25,14 @@ WORKDIR /app
 COPY --from=builder /app/frontend ./frontend
 COPY ./frontend ./frontend
 RUN cd frontend && npm run build
+
+ENV VUE_APP_META_DESCRIPTION="小窝笔记,自动加密的网页版记事本,无需注册." \
+    VUE_APP_META_KEYWORDS="小窝笔记, 云记事本, 在线记事本, 带密码的在线记事本, 加密记事本, 网页版记事本, 网络记事本, 在线写字板, 在线文本编辑器, 网页记事本, SimpleNote 替代品, Standard Notes 替代品" \
+    VUE_APP_PAGE_TITLE="小窝笔记 - 在线存储您的笔记" \
+    VUE_APP_COMPONENT_TITLE="note.ldxw.top" \
+    VUE_APP_APP_KEY="note.ldxw.top" \
+    VUE_APP_H3_TITLE="在线储存您的笔记" \
+    VUE_APP_FAVICON_URL="https://fastly.jsdelivr.net/gh/ldxw/cdn@master/logo/svg/logo/32x32/favicon.ico"
 
 
 FROM node:20-alpine3.18 AS runner
@@ -28,6 +45,14 @@ RUN apk --update add tar
 
 COPY ./backend ./backend
 RUN cd backend && npm run build
+
+ENV VUE_APP_META_DESCRIPTION="小窝笔记,自动加密的网页版记事本,无需注册." \
+    VUE_APP_META_KEYWORDS="小窝笔记, 云记事本, 在线记事本, 带密码的在线记事本, 加密记事本, 网页版记事本, 网络记事本, 在线写字板, 在线文本编辑器, 网页记事本, SimpleNote 替代品, Standard Notes 替代品" \
+    VUE_APP_PAGE_TITLE="小窝笔记 - 在线存储您的笔记" \
+    VUE_APP_COMPONENT_TITLE="note.ldxw.top" \
+    VUE_APP_APP_KEY="note.ldxw.top" \
+    VUE_APP_H3_TITLE="在线储存您的笔记" \
+    VUE_APP_FAVICON_URL="https://fastly.jsdelivr.net/gh/ldxw/cdn@master/logo/svg/logo/32x32/favicon.ico"
 
 EXPOSE 3000
 
