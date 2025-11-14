@@ -4,15 +4,15 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <meta name="description" content="小窝笔记,自动加密的网页版记事本,无需注册."/>
-    <meta name="keywords" content="云记事本, 在线记事本, 带密码的在线记事本, 加密记事本, 网页版记事本, 网0络记事本, 在线写字板, 在线文本编辑器, 网页记事本, SimpleNote 替代品, Standard Notes 替代品">
+    <meta name="description" content="<%= process.env.VUE_APP_META_DESCRIPTION %>"/>
+    <meta name="keywords" content="<%= process.env.VUE_APP_META_KEYWORDS %>">
     <meta name="author" content="Xiao Wo">
     
     <!-- 新增的 ICO 图标链接 -->
-    <link rel="icon" type="image/x-icon" href="https://fastly.jsdelivr.net/gh/ldxw/cdn@master/logo/svg/logo/32x32/favicon.ico" sizes="32x32">
-    <link rel="shortcut icon" href="https://fastly.jsdelivr.net/gh/ldxw/cdn@master/logo/svg/logo/32x32/favicon.ico" type="image/x-icon"> <!-- 兼容旧版浏览器 -->
+    <link rel="icon" type="image/x-icon" href="<%= process.env.VUE_APP_FAVICON_URL %>" sizes="32x32">
+    <link rel="shortcut icon" href="<%= process.env.VUE_APP_FAVICON_URL %>" type="image/x-icon"> <!-- 兼容旧版浏览器 -->
     
-    <title>小窝笔记 - 在线存储您的笔记</title>
+    <title><%= process.env.VUE_APP_PAGE_TITLE %></title>
   </head>
   <body>
     <noscript>

@@ -46,7 +46,7 @@ jobs:
           platforms: linux/amd64,linux/arm64  # 多架构构建
           push: true
           tags: |
-            docker.io/ldxw/notepad:latest
-            docker.io/ldxw/notepad:${{ steps.time.outputs.formatted_time }}
-            ghcr.io/ldxw/notepad:latest
-            ghcr.io/ldxw/notepad:${{ steps.time.outputs.formatted_time }}
+            docker.io/ldxw/notepad:var-re
+            docker.io/ldxw/notepad:var-re-${{ steps.time.outputs.formatted_time }}
+            ghcr.io/ldxw/notepad:var-re
+            ghcr.io/ldxw/notepad:var-re-${{ steps.time.outputs.formatted_time }}

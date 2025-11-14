@@ -52,7 +52,7 @@ const webpackConfig = {
     plugins: [
         new VueLoaderPlugin(),
         new HtmlWebpackPlugin({
-            title: "note.ldxw.top",
+            title: process.env.VUE_APP_COMPONENT_TITLE,
             template: "public/index.html",
             inject: true,
             minify: false,
