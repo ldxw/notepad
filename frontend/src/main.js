@@ -8,6 +8,8 @@ import {Util} from "./classes/Util";
 
 const STORAGE_SESSION_ID_KEY = 'session_id';
 
+app.config.globalProperties.$env = process.env;
+
 const bootSession = function () {
 
     let sid = EasyStorage.get(STORAGE_SESSION_ID_KEY);

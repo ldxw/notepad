@@ -48,9 +48,11 @@ jobs:
           username: ${{ secrets.ALIYUN_DOCKER_USERNAME }}
           password: ${{ secrets.ALIYUN_DOCKER_TOKEN }}
 
-      - name: ⏰ 获取当前时间
+      - name: ⏰ 获取当前时间并设置为环境变量
         id: time
-        run: echo "formatted_time=$(date +'%Y%m%d%H%M')" >> $GITHUB_OUTPUT
+        run: |
+          FORMATTED_TIME=$(date +'%Y%m%d%H%M')
+          echo "FORMATTED_TIME=$FORMATTED_TIME" >> $GITHUB_ENV
 
       - name: 🚀 构建推送多架构镜像
         uses: docker/build-push-action@v5
@@ -61,8 +63,8 @@ jobs:
           push: true
           tags: |
             docker.io/ldxw/notepad:var-re
-            docker.io/ldxw/notepad:var-re-${{ steps.time.outputs.formatted_time }}
+            docker.io/ldxw/notepad:var-re-${{ env.FORMATTED_TIME }}
             ghcr.io/ldxw/notepad:var-re
-            ghcr.io/ldxw/notepad:var-re-${{ steps.time.outputs.formatted_time }}
-            ${{ github.event.inputs.pushToAliyun == 'true' && 'registry.cn-hangzhou.aliyuncs.com/ldxw-git/notepad:var-re' || '' }}
-            ${{ github.event.inputs.pushToAliyun == 'true' && 'registry.cn-hangzhou.aliyuncs.com/ldxw-git/notepad:var-re-${{ steps.time.outputs.formatted_time }}' || '' }}
+            ghcr.io/ldxw/notepad:var-re-${{ env.FORMATTED_TIME }}
+            ${{ github.event.inputs.pushToAliyun == 'true' && format('registry.cn-hangzhou.aliyuncs.com/ldxw-git/notepad:var-re', env.FORMATTED_TIME) || '' }}
+            ${{ github.event.inputs.pushToAliyun == 'true' && format('registry.cn-hangzhou.aliyuncs.com/ldxw-git/notepad:var-re-{0}', env.FORMATTED_TIME) || '' }}
