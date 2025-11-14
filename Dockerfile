@@ -16,8 +16,6 @@ ENV VUE_APP_META_DESCRIPTION="小窝笔记,自动加密的网页版记事本,无
     VUE_APP_H3_TITLE="在线储存您的笔记" \
     VUE_APP_FAVICON_URL="https://fastly.jsdelivr.net/gh/ldxw/cdn@master/logo/svg/logo/32x32/favicon.ico"
 
-RUN cd frontend && npm run build
-
 FROM node:20-alpine3.18 as vue-build
 # FROM node:20-bullseye as vue-build
 WORKDIR /app
