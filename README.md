@@ -142,7 +142,15 @@ That is all — the switcher picks it up automatically.
 
 `<title>`, `<meta name="description">`, `<meta name="keywords">` and `<meta name="author">` get their
 defaults baked into the built `index.html` from `frontend/site.config.js` (build time). They can then be
-overridden **at container start** — no rebuild needed — with environment variables:
+overridden **at container start** — no rebuild needed — with environment variables.
+
+Every supported variable (page metadata, `SITE_LANG`, `TZ`, `ARCHIVE_CRON`) is laid out and documented in
+**`.env.example`** — copy it next to `docker-compose.yml` and edit:
+
+```shell
+cp .env.example .env
+docker compose up -d
+```
 
 ```bash
 docker run -d -p 3000:3000 \

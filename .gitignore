@@ -3,3 +3,5 @@ node_modules
 dist
 **/archive.tar.gz
 **/bundle.js*
+# 本地部署用的变量文件（里面有密码/令牌时不要提交）；示范文件 .env.example 要提交
+.env
