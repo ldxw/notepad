@@ -28,7 +28,7 @@ on:
         type: boolean
         default: false
       makeRelease:
-        description: "构建成功后创建 Release（镜像地址 + 包介绍）"
+        description: "构建成功后创建 Release（发布说明 + 镜像地址 + SHA256SUMS）"
         type: boolean
         default: true
 
@@ -65,6 +65,10 @@ jobs:
     steps:
       - name: 📥 拉取代码
         uses: actions/checkout@v4
+        with:
+          # 生成「更新说明」需要完整历史与既有标签
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: 🧮 计算推送目标（hub / ghcr / 阿里云）
         id: images
@@ -199,7 +203,7 @@ jobs:
             echo "强制构建：${{ steps.images.outputs.force }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: 📦 发布 Release（镜像地址 + 包介绍 + 快速开始）
+      - name: 📦 发布 Release（发布说明 + 镜像地址 + SHA256SUMS）
         if: steps.images.outputs.release == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -210,53 +214,92 @@ jobs:
           SHA="${{ github.sha }}"
           DIGEST="${{ steps.build.outputs.digest }}"
           PLATFORMS="${{ env.PLATFORMS }}"
-          REPO_DESC="${{ github.event.repository.description }}"
+          LIST="${{ steps.images.outputs.list }}"
           NOTES=/tmp/notes.md
-          TABLE=/tmp/imgtable.md
+          SUM=/tmp/SHA256SUMS
+          CHANGELOG=/tmp/changelog.md
 
-          # 取时间标签（metadata-action 生成的、不是 latest 的那个）作为 Release 标签
+          # Release 标签用镜像的时间标签（metadata-action 生成的、非 latest 的那个）
           TAG="$(printf '%s\n' "${{ steps.meta.outputs.tags }}" | sed -E 's#^.*:##' | grep -v '^latest$' | head -1)"
           if [ -z "$TAG" ]; then
             TAG="$(date -u '+%Y-%m-%d-%H%M')"
           fi
 
-          FIRST_IMG="$(printf '%s\n' "${{ steps.images.outputs.list }}" | head -1)"
+          # 本次真正推过的仓库（可能只有其中一两个）
+          HUB_IMG="$(printf '%s\n' "$LIST" | grep -E '^docker\.io/' | head -1)" || HUB_IMG=""
+          GHCR_IMG="$(printf '%s\n' "$LIST" | grep -E '^ghcr\.io/' | head -1)" || GHCR_IMG=""
+          ALI_IMG="$(printf '%s\n' "$LIST" | grep -E 'aliyuncs\.com' | head -1)" || ALI_IMG=""
 
-          # 每个镜像仓库一行
-          : > "$TABLE"
-          while IFS= read -r img; do
-            [ -z "$img" ] && continue
-            printf '| `%s` | `latest`, `%s` | `docker pull %s:latest` |\n' "$img" "$TAG" "$img" >> "$TABLE"
-          done <<< "${{ steps.images.outputs.list }}"
-
+          # ---------- SHA256SUMS：各标签的 manifest 摘要 ----------
           {
-            echo "## 🗒️ 在线记事本 · 镜像发布 \`$TAG\`"
+            echo "# 镜像 manifest 摘要（多架构 manifest list），二进制校验文件不存在时可用于比对镜像"
+            echo "# 比对方式：docker buildx imagetools inspect --raw <镜像> | sha256sum"
+          } > "$SUM"
+          for img in $GHCR_IMG $HUB_IMG $ALI_IMG; do
+            [ -z "$img" ] && continue
+            for t in latest "$TAG"; do
+              ref="${img}:${t}"
+              d="$(docker buildx imagetools inspect --raw "$ref" 2>/dev/null | sha256sum | awk '{print $1}')" || d=""
+              if [ -n "$d" ]; then
+                printf '%s  %s\n' "$d" "$ref" >> "$SUM"
+              fi
+            done
+          done
+
+          # ---------- 更新说明：上一个构建标签至今的提交 ----------
+          : > "$CHANGELOG"
+          PREV_TAG="$(git tag -l --sort=-creatordate | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{4}$' | grep -v "^${TAG}$" | head -1 || true)"
+          if [ -n "$PREV_TAG" ] && git rev-parse -q --verify "$PREV_TAG" >/dev/null 2>&1; then
+            git log --pretty='- %s' "${PREV_TAG}..${SHA}" > "$CHANGELOG" || true
+          fi
+          if [ ! -s "$CHANGELOG" ]; then
+            git log --pretty='- %s' -10 "$SHA" > "$CHANGELOG" || true
+          fi
+          if [ ! -s "$CHANGELOG" ]; then
+            echo "- 本次发布" > "$CHANGELOG"
+          fi
+
+          # ---------- 组装发布说明 ----------
+          : > "$NOTES"
+          {
+            echo "## 发布说明"
             echo
-            echo "> $REPO_DESC"
+            echo "- **构建时间**：$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+            echo "- **提交**：\`${SHA}\`"
+            echo "- **镜像标签**：\`latest\`、\`${TAG}\`"
+            echo "- **支持架构**：\`${PLATFORMS}\`（多架构 manifest list）"
+            echo "- **文件校验**：请使用本次 Release 附带的 \`SHA256SUMS\` 校验镜像摘要（内容为各标签的 manifest 摘要，比对方式见文件内注释）"
             echo
-            echo "自托管在线记事本：笔记在浏览器端加密后才上传，中英双语界面，首页预渲染为静态 HTML，容器内每日自动归档。"
+            echo "## Docker 镜像"
             echo
-            echo "### 📦 镜像地址"
+            for pair in "GHCR:${GHCR_IMG}" "Docker Hub:${HUB_IMG}" "阿里云:${ALI_IMG}"; do
+              label="${pair%%:*}"
+              img="${pair#*:}"
+              if [ -n "$img" ]; then
+                echo "**${label}**"
+                echo
+                echo '```'
+                echo "${img}:latest"
+                echo "${img}:${TAG}"
+                echo '```'
+                echo
+              fi
+            done
+            echo "多架构摘要：\`${DIGEST:-见构建日志}\`"
             echo
-            echo "| 仓库 | 标签 | 拉取 |"
-            echo "|---|---|---|"
-            cat "$TABLE"
+            echo "## 更新说明"
             echo
-            echo "### 🖥️ 平台 / 摘要"
+            cat "$CHANGELOG"
             echo
-            echo "- 架构：\`$PLATFORMS\`（多架构 manifest list）"
-            echo "- 摘要：\`${DIGEST:-见构建日志}\`"
-            echo "- 提交：\`$SHA\`"
-            echo
-            echo "### 🚀 快速开始"
+            echo "## 快速开始"
             echo
             echo '```bash'
-            echo "docker run -d --name notepad -p 3000:3000 -e TZ=Asia/Shanghai ${FIRST_IMG}:latest"
+            echo "docker run -d --name notepad -p 3000:3000 -e TZ=Asia/Shanghai ${GHCR_IMG:-${HUB_IMG:-${ALI_IMG}}}:latest"
             echo '```'
             echo
-            echo "或使用仓库里的 compose：\`docker compose up -d\`（compose 里已指向该镜像）"
+            echo "或使用仓库里的 compose：\`docker compose up -d\`（已指向该镜像）"
             echo
-            echo "### ⚙️ 可用环境变量"
+            echo "## 可用环境变量"
             echo
             echo "| 变量 | 说明 |"
             echo "|---|---|"
@@ -264,26 +307,32 @@ jobs:
             echo '| `TZ` | 时区，容器内 cron 按它计算（默认 UTC） |'
             echo '| `ARCHIVE_CRON` | 每日归档时间，默认 `30 3 * * *`，设 `off` 关闭 |'
             echo
-            echo "### ✨ 特性"
+            echo "## 特性"
             echo
             echo "- 🔐 笔记在客户端加密后才上传（服务端只有密文）"
             echo "- 🌐 中英双语 + 头部语言切换（自动识别浏览器语言并用 localStorage 记忆）"
             echo "- 🔎 首页预渲染成静态 HTML，便于搜索引擎收录"
             echo "- 💾 容器内每日自动归档到 \`backend/public/backups/\`"
-            echo "- 🧱 多架构镜像：$PLATFORMS"
+            echo "- 🧱 多架构镜像：${PLATFORMS}"
           } > "$NOTES"
 
+          # ---------- 创建 / 更新 Release，并附上 SHA256SUMS ----------
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
             gh release edit "$TAG" --repo "$REPO" --title "镜像 $TAG" --notes-file "$NOTES"
-            echo "已更新 Release：$TAG"
           else
             gh release create "$TAG" --repo "$REPO" --title "镜像 $TAG" --target "$SHA" --notes-file "$NOTES" --latest
-            echo "已创建 Release：$TAG"
           fi
+          gh release upload "$TAG" "$SUM" --repo "$REPO" --clobber
+          echo "Release 已就绪：$TAG（附 SHA256SUMS）"
 
           {
             echo ""
             echo "### 📦 Release"
             echo ""
-            echo "- 标签：\`$TAG\`  → ${{ github.server_url }}/$REPO/releases/tag/$TAG"
+            echo "- https://github.com/$REPO/releases/tag/$TAG"
+            echo ""
+            echo "SHA256SUMS 内容："
+            echo '```'
+            cat "$SUM"
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
