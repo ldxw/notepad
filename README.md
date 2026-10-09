@@ -194,6 +194,13 @@ docker exec -it notepad ls -lh backend/public/backups/
 
 ## Troubleshooting
 
+### Prerendering
+
+Production builds no longer prerender the homepage by default. The prerender plugin drives
+puppeteer's bundled Chromium, and puppeteer@1.20 only ships an x86_64 Linux build, so an arm64
+(multi-arch) build can never launch it. Set `PRERENDER=true` to opt back in - that works only for
+`linux/amd64` and needs Chromium's system libraries installed in the build stage.
+
 > ERROR in [prerender-spa-plugin] Unable to prerender all routes!  
 > ERROR in Failed to launch chrome!  
 > error while loading shared libraries: libX11-xcb.so.1: cannot open shared object file: No such file or directory

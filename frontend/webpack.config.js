@@ -78,14 +78,22 @@ const webpackConfig = {
     },
 };
 
-if (isProd) {
+// 预渲染（prerender）默认关闭，原因见下：
+//   它依赖 puppeteer 自带的 Chromium，而 puppeteer@1.20 只提供 x86_64 的 Linux 版
+//   （下载表里只有 Linux_x64）。arm64 构建时它会拉到一个 x86_64 二进制，
+//   启动必然失败（Failed to launch chrome! ... ENOENT），从而让多架构构建中断。
+//   之前它在构建期负责把首页 HTML 预渲染出来（给搜索引擎看）。
+// 需要预渲染时（仅能用于 amd64 构建）：
+//   PRERENDER=true npm run build
+//   并且 Dockerfile 的 vue-build 阶段需要装回 Chromium 的系统库。
+const enablePrerender = isProd && process.env.PRERENDER === 'true';
+
+if (enablePrerender) {
 
     const prerender = new PrerenderSPAPlugin({
         routes: ['/']
     });
 
-    // requires extra dependencies
-    // error while loading shared libraries: libX11-xcb.so.1: cannot open shared object file: No such file or directory
     webpackConfig.plugins.push(prerender);
 }
 
