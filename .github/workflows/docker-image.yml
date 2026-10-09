@@ -27,10 +27,14 @@ on:
         description: "强制构建（忽略构建缓存，全部从零重编）"
         type: boolean
         default: false
+      makeRelease:
+        description: "构建成功后创建 Release（镜像地址 + 包介绍）"
+        type: boolean
+        default: true
 
-# 推送 ghcr.io 用内置 GITHUB_TOKEN，只需要 packages: write
+# ghcr.io 用内置 GITHUB_TOKEN 推送；创建 Release 需要 contents: write
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 concurrency:
@@ -56,6 +60,7 @@ jobs:
       INPUT_PUSH_GHCR: ${{ inputs.pushToGhcr }}
       INPUT_PUSH_ALIYUN: ${{ inputs.pushToAliyun }}
       INPUT_FORCE: ${{ inputs.forceBuild }}
+      INPUT_RELEASE: ${{ inputs.makeRelease }}
 
     steps:
       - name: 📥 拉取代码
@@ -73,6 +78,7 @@ jobs:
           want_ghcr="${INPUT_PUSH_GHCR:-true}"
           want_aliyun="${INPUT_PUSH_ALIYUN:-true}"
           force="${INPUT_FORCE:-false}"
+          want_release="${INPUT_RELEASE:-true}"
 
           images=()
           do_ghcr=false
@@ -119,6 +125,7 @@ jobs:
             echo "do_ghcr=${do_ghcr}"
             echo "do_aliyun=${do_aliyun}"
             echo "force=${force}"
+            echo "release=${want_release}"
           } >> "$GITHUB_OUTPUT"
 
       - name: 🛠️ 配置多架构支持 (QEMU)
@@ -161,6 +168,7 @@ jobs:
             type=raw,value={{date 'YYYY-MM-DD-HHmm'}}
 
       - name: 🚀 构建并推送多架构镜像
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -189,4 +197,93 @@ jobs:
             echo '```'
             echo ""
             echo "强制构建：${{ steps.images.outputs.force }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 📦 发布 Release（镜像地址 + 包介绍 + 快速开始）
+        if: steps.images.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          REPO="${{ github.repository }}"
+          SHA="${{ github.sha }}"
+          DIGEST="${{ steps.build.outputs.digest }}"
+          PLATFORMS="${{ env.PLATFORMS }}"
+          REPO_DESC="${{ github.event.repository.description }}"
+          NOTES=/tmp/notes.md
+          TABLE=/tmp/imgtable.md
+
+          # 取时间标签（metadata-action 生成的、不是 latest 的那个）作为 Release 标签
+          TAG="$(printf '%s\n' "${{ steps.meta.outputs.tags }}" | sed -E 's#^.*:##' | grep -v '^latest$' | head -1)"
+          if [ -z "$TAG" ]; then
+            TAG="$(date -u '+%Y-%m-%d-%H%M')"
+          fi
+
+          FIRST_IMG="$(printf '%s\n' "${{ steps.images.outputs.list }}" | head -1)"
+
+          # 每个镜像仓库一行
+          : > "$TABLE"
+          while IFS= read -r img; do
+            [ -z "$img" ] && continue
+            printf '| `%s` | `latest`, `%s` | `docker pull %s:latest` |\n' "$img" "$TAG" "$img" >> "$TABLE"
+          done <<< "${{ steps.images.outputs.list }}"
+
+          {
+            echo "## 🗒️ 在线记事本 · 镜像发布 \`$TAG\`"
+            echo
+            echo "> $REPO_DESC"
+            echo
+            echo "自托管在线记事本：笔记在浏览器端加密后才上传，中英双语界面，首页预渲染为静态 HTML，容器内每日自动归档。"
+            echo
+            echo "### 📦 镜像地址"
+            echo
+            echo "| 仓库 | 标签 | 拉取 |"
+            echo "|---|---|---|"
+            cat "$TABLE"
+            echo
+            echo "### 🖥️ 平台 / 摘要"
+            echo
+            echo "- 架构：\`$PLATFORMS\`（多架构 manifest list）"
+            echo "- 摘要：\`${DIGEST:-见构建日志}\`"
+            echo "- 提交：\`$SHA\`"
+            echo
+            echo "### 🚀 快速开始"
+            echo
+            echo '```bash'
+            echo "docker run -d --name notepad -p 3000:3000 -e TZ=Asia/Shanghai ${FIRST_IMG}:latest"
+            echo '```'
+            echo
+            echo "或使用仓库里的 compose：\`docker compose up -d\`（compose 里已指向该镜像）"
+            echo
+            echo "### ⚙️ 可用环境变量"
+            echo
+            echo "| 变量 | 说明 |"
+            echo "|---|---|"
+            echo '| `SITE_TITLE` / `SITE_DESCRIPTION` / `SITE_KEYWORDS` / `SITE_AUTHOR` | 页面元信息（运行期注入 index.html，改完重启容器即生效） |'
+            echo '| `TZ` | 时区，容器内 cron 按它计算（默认 UTC） |'
+            echo '| `ARCHIVE_CRON` | 每日归档时间，默认 `30 3 * * *`，设 `off` 关闭 |'
+            echo
+            echo "### ✨ 特性"
+            echo
+            echo "- 🔐 笔记在客户端加密后才上传（服务端只有密文）"
+            echo "- 🌐 中英双语 + 头部语言切换（自动识别浏览器语言并用 localStorage 记忆）"
+            echo "- 🔎 首页预渲染成静态 HTML，便于搜索引擎收录"
+            echo "- 💾 容器内每日自动归档到 \`backend/public/backups/\`"
+            echo "- 🧱 多架构镜像：$PLATFORMS"
+          } > "$NOTES"
+
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo "$REPO" --title "镜像 $TAG" --notes-file "$NOTES"
+            echo "已更新 Release：$TAG"
+          else
+            gh release create "$TAG" --repo "$REPO" --title "镜像 $TAG" --target "$SHA" --notes-file "$NOTES" --latest
+            echo "已创建 Release：$TAG"
+          fi
+
+          {
+            echo ""
+            echo "### 📦 Release"
+            echo ""
+            echo "- 标签：\`$TAG\`  → ${{ github.server_url }}/$REPO/releases/tag/$TAG"
           } >> "$GITHUB_STEP_SUMMARY"
