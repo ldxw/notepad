@@ -196,10 +196,16 @@ docker exec -it notepad ls -lh backend/public/backups/
 
 ### Prerendering
 
-Production builds no longer prerender the homepage by default. The prerender plugin drives
-puppeteer's bundled Chromium, and puppeteer@1.20 only ships an x86_64 Linux build, so an arm64
-(multi-arch) build can never launch it. Set `PRERENDER=true` to opt back in - that works only for
-`linux/amd64` and needs Chromium's system libraries installed in the build stage.
+`npm run build` prerenders the homepage into static HTML right after webpack, using the official
+Chrome for Testing `chrome-headless-shell` and `--dump-dom` (`frontend/scripts/prerender.mjs`).
+Both x64 and arm64 work: the Dockerfile downloads the build matching `TARGETARCH` and runs
+`chrome-headless-shell --version` to prove it starts.
+
+The old puppeteer-based plugin is gone - puppeteer@1.20 ships only an x86_64 Chromium, so the arm64
+leg of a multi-arch build could never launch it.
+
+Outside Docker, point `CHROME_BIN` at any Chrome/Chromium binary to prerender locally; if no browser
+is found the step is skipped with a warning, so a plain `npm run build` still succeeds.
 
 > ERROR in [prerender-spa-plugin] Unable to prerender all routes!  
 > ERROR in Failed to launch chrome!  

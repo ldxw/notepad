@@ -9,11 +9,36 @@ RUN npm install --prefix ./backend/
 RUN npm install --prefix ./frontend/
 
 
-# 注意：vue 的生产构建默认不做 prerender（原因见 frontend/webpack.config.js）。
-# 若要用 PRERENDER=true 启用预渲染，本阶段需要装回 Chromium 的系统库（libnss3 等），
-# 并且只能构建 linux/amd64 —— puppeteer 1.20 没有 arm64 版 Chromium，arm64 上必然失败。
+# 预渲染（Chrome for Testing 的 headless-shell）所在的阶段。
+# x64 用 linux64、arm64 用 linux-arm64，都是官方二进制；下面按 TARGETARCH 自动选。
 FROM node:24-bookworm AS vue-build
 WORKDIR /app
+
+# headless-shell 需要的系统库 + 解压工具（库名逐个对照过 bookworm 包索引）
+RUN apt-get -o Acquire::Retries=3 update && \
+    apt-get install -yq --no-install-recommends unzip ca-certificates \
+        libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+        libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libxext6 \
+        libx11-6 libxcb1 libgbm1 libasound2 libpango-1.0-0 libcairo2 libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 下载对应架构的 Chrome，并就地验证它能跑起来（arm64 那条腿会走 QEMU 模拟，
+# 这一步跑通就等于证明了模拟环境里 Chrome 可用）
+ARG CHROME_VERSION=157.0.8094.0
+ARG TARGETARCH
+RUN set -eux; \
+    case "${TARGETARCH:-amd64}" in \
+      amd64) PLAT=linux64 ;; \
+      arm64) PLAT=linux-arm64 ;; \
+      *) echo "不支持的架构: ${TARGETARCH}" >&2; exit 1 ;; \
+    esac; \
+    curl -fsSL -o /tmp/shell.zip "https://storage.googleapis.com/chrome-for-testing-public/${CHROME_VERSION}/${PLAT}/chrome-headless-shell-${PLAT}.zip"; \
+    mkdir -p /opt/chrome; \
+    unzip -q -o /tmp/shell.zip -d /opt/chrome; \
+    rm -f /tmp/shell.zip; \
+    ln -sf "/opt/chrome/chrome-headless-shell-${PLAT}/chrome-headless-shell" /usr/local/bin/chrome-headless-shell; \
+    chrome-headless-shell --version
+ENV CHROME_BIN=/usr/local/bin/chrome-headless-shell
 
 COPY --from=builder /app/frontend ./frontend
 COPY ./frontend ./frontend
