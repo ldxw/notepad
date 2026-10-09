@@ -357,6 +357,8 @@ jobs:
             echo "|---|---|"
             echo '| `SITE_TITLE` / `SITE_DESCRIPTION` / `SITE_KEYWORDS` / `SITE_AUTHOR` | 页面元信息（运行期注入 index.html，改完重启容器即生效） |'
             echo '| `SITE_LANG` | 默认界面语言：`auto`（默认，跟随浏览器）/ `zh` / `en`；访客自己选过的语言优先 |'
+            echo '| `SITE_SALT` | 口令哈希用的 salt（默认 `notepad.mx`）；换掉后旧 salt 下的笔记在界面上不可见 |'
+            echo '| `SITE_NAME` | 页头左上角显示的名字（默认 `notepad.mx`） |'
             echo '| `TZ` | 时区，容器内 cron 按它计算（默认 UTC） |'
             echo '| `ARCHIVE_CRON` | 每日归档时间，默认 `30 3 * * *`，设 `off` 关闭 |'
             echo

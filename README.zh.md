@@ -88,7 +88,10 @@ caddy start --config ./etc/Caddyfile
 ## :arrows_counterclockwise: 在不同实例之间共享笔记
 
 在一台服务器上创建的笔记，与这个应用的其它所有部署都是兼容的 ——
-只要口令用同一个 salt 做哈希（默认是 `notepad.mx`，定义在 `frontend/src/config.js` 里）。
+只要口令用同一个 salt 做哈希（默认是 `notepad.mx`，即 `frontend/src/config.js` 里的 `APP_KEY`）。
+
+这个 salt 可以用 **`SITE_SALT`** 在运行时指定（无需重新构建）：给自己的实例设一个自己的值，
+它的笔记就自成一个命名空间。注意：之后改这个值，用旧 salt 建的笔记在界面上就找不回来了 —— 改之前先备份。
 
 因此你可以把笔记从一台服务器导入到另一台，或者拿它做一个备份镜像站，以防主站关停。
 

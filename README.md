@@ -90,8 +90,12 @@ This makes it so that no one besides you know the contents of your notes, or whe
 ## :arrows_counterclockwise: Sharing Notes between instances
 
 Notes created on one server are compatible with all other deployments of this application,
-as long as passphrases are hashed using the same salt (`notepad.mx` by default as defined
-inside `frontend/src/config.js`).
+as long as passphrases are hashed using the same salt (`notepad.mx` by default, defined as
+`APP_KEY` in `frontend/src/config.js`).
+
+The salt is settable at runtime with **`SITE_SALT`** — no rebuild: give your instance its own
+value and its notes live in their own namespace. Note that changing it later makes notes created
+under the old salt unreachable from the UI, so back up first.
 
 This makes it possible to import notes from one server to another, or host a backup mirror instance in case the main
 instance gets shut down.

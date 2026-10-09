@@ -4,7 +4,7 @@
 
     <h1 class="mb-0">
         <span class="hidden md:inline mr-1">&#x1F4C3;</span>
-        <a href="/" @click.prevent="goHome" class="brand">notepad.mx</a>
+        <a href="/" @click.prevent="goHome" class="brand">{{ siteName }}</a>
         <template v-if="documentIdShort">
             <span class="mx-2">&ndash;</span>#{{ documentIdShort }}
         </template>
@@ -39,6 +39,7 @@ import Editor from "./Editor.vue";
 import Home from "./Home.vue";
 
 import store from "../store";
+import {SITE_NAME} from "../config";
 import {t, locale, setLocale, availableLocales} from "../i18n";
 
 export default {
@@ -49,7 +50,8 @@ export default {
   data() {
     return {
       state: store.state,
-      locales: availableLocales
+      locales: availableLocales,
+      siteName: SITE_NAME
     }
   },
   computed: {

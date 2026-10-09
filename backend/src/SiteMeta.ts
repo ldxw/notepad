@@ -27,7 +27,9 @@ export class SiteMeta {
         description: "SITE_DESCRIPTION",
         keywords: "SITE_KEYWORDS",
         author: "SITE_AUTHOR",
-        lang: "SITE_LANG"
+        lang: "SITE_LANG",
+        salt: "SITE_SALT",
+        siteName: "SITE_NAME"
     };
 
     /**
@@ -130,6 +132,19 @@ export class SiteMeta {
 
             // 前端 i18n 靠这个 meta 决定默认语言（localStorage 里的用户选择优先）
             html = SiteMeta.setMeta(html, "default-locale", lang);
+        }
+
+        // 口令 salt（upstream 里的 APP_KEY）和页头站点名：注入成前端运行时读取的 <meta>
+        const salt = env[SiteMeta.ENV.salt];
+
+        if (salt) {
+            html = SiteMeta.setMeta(html, "site-salt", salt);
+        }
+
+        const siteName = env[SiteMeta.ENV.siteName];
+
+        if (siteName) {
+            html = SiteMeta.setMeta(html, "site-name", siteName);
         }
 
         if (description) {
