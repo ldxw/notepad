@@ -12,7 +12,7 @@
 
     <div class="hidden md:block flex-grow text-center items-center mb-0" v-html="banner"></div>
 
-      <div class="flex items-center shrink-0">
+      <div class="flex items-center shrink-0 ml-auto">
           <nav class="nav-links hidden md:flex">
               <a href="https://github.com/Athlon1600/notepad" target="_blank" rel="nofollow noopener noreferrer">{{ t('app.githubRepo') }}</a>
           </nav>
