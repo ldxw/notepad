@@ -158,7 +158,7 @@ jobs:
           images: ${{ steps.images.outputs.list }}
           tags: |
             type=raw,value=latest
-            type=raw,value={{date 'YYYY-MM-DD'}}
+            type=raw,value={{date 'YYYY-MM-DD-HHmm'}}
 
       - name: 🚀 构建并推送多架构镜像
         uses: docker/build-push-action@v6
