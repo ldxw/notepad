@@ -1,7 +1,9 @@
 services:
   notepad:
     container_name: notepad
-    image: athlon1600/notepad:latest
+    # 用自己的镜像（CI 会构建并推送到 docker.io/ldxw/notepad）
+    # 想跑上游原版镜像可以换回：athlon1600/notepad:latest
+    image: ldxw/notepad:latest
     environment:
       NODE_ENV: production
       # ── 运行时页面元信息（留空 = 用构建时 site.config.js 里的默认值）──────────
