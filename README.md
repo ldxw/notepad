@@ -150,6 +150,7 @@ docker run -d -p 3000:3000 \
   -e SITE_DESCRIPTION="Notes, stored securely online" \
   -e SITE_KEYWORDS="notepad,encrypted notes" \
   -e SITE_AUTHOR="me" \
+  -e SITE_LANG="en" \
   ldxw/notepad
 ```
 
@@ -161,7 +162,13 @@ Or via `docker-compose.yml` / a `.env` file next to it:
       SITE_DESCRIPTION: ${SITE_DESCRIPTION:-}
       SITE_KEYWORDS: ${SITE_KEYWORDS:-}
       SITE_AUTHOR: ${SITE_AUTHOR:-}
+      SITE_LANG: ${SITE_LANG:-}
 ```
+
+`SITE_LANG` sets the **default UI language** (`auto` = follow the browser, which is the default;
+`zh` / `en` pin it). It is injected as `<meta name="default-locale">` and only applies to visitors
+who have not picked a language yet — an explicit choice in the header is kept in `localStorage` and
+always wins.
 
 `backend/src/SiteMeta.ts` rewrites the served `index.html` once at boot (values are escaped), so the
 overrides are present in the HTML itself — search engines see them too. Any variable left unset or

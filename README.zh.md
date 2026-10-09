@@ -145,6 +145,7 @@ docker run -d -p 3000:3000 \
   -e SITE_DESCRIPTION="Notes, stored securely online" \
   -e SITE_KEYWORDS="notepad,encrypted notes" \
   -e SITE_AUTHOR="me" \
+  -e SITE_LANG="zh" \
   ldxw/notepad
 ```
 
@@ -156,7 +157,12 @@ docker run -d -p 3000:3000 \
       SITE_DESCRIPTION: ${SITE_DESCRIPTION:-}
       SITE_KEYWORDS: ${SITE_KEYWORDS:-}
       SITE_AUTHOR: ${SITE_AUTHOR:-}
+      SITE_LANG: ${SITE_LANG:-}
 ```
+
+`SITE_LANG` 用来设**默认界面语言**（`auto` = 跟随浏览器，也是默认值；`zh` / `en` 直接指定）。
+它以 `<meta name="default-locale">` 的形式注入，只对**还没选过语言的访客**生效 ——
+访客在头部手动选过的语言记在 `localStorage` 里，优先级更高。
 
 `backend/src/SiteMeta.ts` 会在启动时重写一次被服务的 `index.html`（值都做了转义），
 所以覆盖后的值是写在 HTML 里的 —— 搜索引擎同样能看到。任何未设置或为空的变量都会保留构建期默认值，

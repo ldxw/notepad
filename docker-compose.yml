@@ -14,6 +14,8 @@ services:
       SITE_DESCRIPTION: ${SITE_DESCRIPTION:-}
       SITE_KEYWORDS: ${SITE_KEYWORDS:-}
       SITE_AUTHOR: ${SITE_AUTHOR:-}
+      # 默认界面语言：auto（跟随浏览器，默认）/ zh / en
+      SITE_LANG: ${SITE_LANG:-}
       # ── 容器内定时归档（backend/bin/archive.sh）────────────────────────────
       # 容器时区：cron 的小时数按这个时区计算（默认 UTC 会导致时间不对）
       TZ: ${TZ:-Asia/Shanghai}

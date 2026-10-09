@@ -153,10 +153,31 @@ function detectLocale() {
         // localStorage unavailable (private mode, prerender, ...)
     }
 
+    // 容器启动时注入的默认语言（SITE_LANG → <meta name="default-locale">）；
+    // 上面 localStorage 里保存的用户选择优先于它。
+    const injected = injectedDefaultLocale();
+
+    if (injected) {
+        return injected;
+    }
+
     const lang = ((typeof navigator !== "undefined" && navigator.language) || "en").toLowerCase();
 
     // zh, zh-CN, zh-TW, zh-Hans, ... all map to the single Chinese pack for now
     return lang.startsWith("zh") ? "zh" : "en";
+}
+
+/** 读出后端注入的默认语言；没有或不是已知语言时返回 null */
+function injectedDefaultLocale() {
+
+    if (typeof document === "undefined" || !document.querySelector) {
+        return null;
+    }
+
+    const meta = document.querySelector('meta[name="default-locale"]');
+    const code = meta && meta.getAttribute ? (meta.getAttribute("content") || "").trim().toLowerCase() : "";
+
+    return messages[code] ? code : null;
 }
 
 // reactive current locale; templates that call t() re-render when it changes
