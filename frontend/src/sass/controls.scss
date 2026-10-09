@@ -1,7 +1,6 @@
 
-
 .btn {
-  background-color: #4CAF50; /* Green */
+  background-color: #4CAF50;
   border: none;
   color: white !important;
   padding: 0.5em 1.2em;
@@ -9,8 +8,7 @@
   text-decoration: none;
   display: inline-block;
   font-size: 1em;
-  border-radius: 0.3em;
-
+  border-radius: 0.45em;
   text-transform: uppercase;
 }
 
@@ -27,17 +25,20 @@ textarea {
   width: 100%;
   height: 50vh;
 
-  font-family: "Courier New", serif;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+  font-size: .95rem;
+  line-height: 1.6;
 
   padding: 12px 20px;
   box-sizing: border-box;
-  border: 2px solid #ccc;
-  border-radius: 4px;
-  background-color: #f8f8f8;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--surface);
+  color: var(--text);
   resize: both;
 }
 
 input:disabled {
-  background-color: #e9ecef;
-  opacity: 1;
+  background-color: var(--surface-2);
+  opacity: .7;
 }

@@ -3,6 +3,73 @@
 @tailwind utilities;
 
 @import 'controls.scss';
+@import 'home.scss';
+
+// ── 主题变量 ───────────────────────────────────────────────────────────────
+// 由 <html data-theme="auto|light|dark"> 决定；auto 时跟随系统偏好。
+// 组件里一律用 var(--x)，不要再写死颜色。
+:root {
+  --bg: #f7f6f3;
+  --surface: #ffffff;
+  --surface-2: #f1f2f4;
+  --text: #22262e;
+  --muted: #6d737d;
+  --border: #dcdfe4;
+  --accent: #f42f42;          // 品牌红（沿用原来头部品牌名的颜色）
+  --link: #1657d6;
+  --code-bg: #f1f2f4;
+  --header-bg: cornsilk;
+  --shadow-sm: 0 1px 2px rgba(16, 18, 27, .05);
+  --shadow: 0 1px 2px rgba(16, 18, 27, .04), 0 10px 30px rgba(16, 18, 27, .07);
+  --radius: 14px;
+}
+
+@mixin dark-palette {
+  --bg: #0f1115;
+  --surface: #171a20;
+  --surface-2: #1e222a;
+  --text: #e7e9ee;
+  --muted: #98a0ad;
+  --border: #2a2f39;
+  --accent: #ff6b7a;
+  --link: #7aa2ff;
+  --code-bg: #1b1f26;
+  --header-bg: #171a20;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .35);
+}
+
+html[data-theme="dark"] {
+  @include dark-palette;
+}
+
+html[data-theme="auto"] {
+  @media (prefers-color-scheme: dark) {
+    @include dark-palette;
+  }
+}
+
+// 主题切换时的过渡（尊重 prefers-reduced-motion）
+@media (prefers-reduced-motion: no-preference) {
+  body, .header, .card-like, input, textarea, a {
+    transition: background-color .25s ease, color .25s ease, border-color .25s ease;
+  }
+}
+
+html, body {
+  height: 100%;
+  scrollbar-gutter: stable both-edges;
+}
+
+html {
+  overflow-y: scroll;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+}
 
 h1 {
   font-size: 2rem;
@@ -18,24 +85,17 @@ h3 {
 
 h1, h2, h3 {
   @apply font-bold mb-4;
-}
-
-html, body {
-  height: 100%;
-  scrollbar-gutter: stable both-edges;
-}
-
-html {
-  overflow-y: scroll;
-}
-
-body {
-  font-family: 'Trebuchet MS', sans-serif;
-  color: #2c3e50;
+  letter-spacing: -.015em;
 }
 
 p {
   margin-bottom: 1rem;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 2.25rem 0;
 }
 
 #app {
@@ -46,17 +106,18 @@ p {
 .header {
   @apply flex items-center;
   @apply px-4 py-2;
-  background-color: cornsilk;
-  border-bottom: 1px solid darkgrey;
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border);
 
   > h1 > a {
 
-    font-family: "Arial Rounded MT Bold", serif;
-    color: #f42f42;
-    text-decoration: underline;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    color: var(--accent);
+    text-decoration: none;
 
     &:hover {
-      text-decoration: none;
+      text-decoration: underline;
     }
 
   }
@@ -64,53 +125,50 @@ p {
 }
 
 .text-muted {
-  color: #a3a1a1;
+  color: var(--muted);
 }
 
 a, a:visited, a:active {
-  color: #0000EE;
-  text-decoration: underline;
+  color: var(--link);
 }
 
 a:hover {
-  color: red;
+  color: var(--accent);
 }
 
 input[type=text] {
   padding: 0.5rem 1rem;
-  color: #16191f;
-  border-radius: 0.2rem;
-  border: 1px solid #aab7b8;
+  color: var(--text);
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
 }
 
 #phrase {
   width: 100%;
-  font-size: 1.6em;
+  font-size: 1.5em;
   padding: 0.8em 1em;
 
-  // text-transform: uppercase;
-  ///font-weight: 400;
   text-align: center;
 
-  color: #0d4163 !important;
+  color: var(--text) !important;
+  background-color: var(--surface);
 
-  font-family: monospace, courier;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  border-radius: 8px;
-  box-shadow: 0 12px 18px 2px rgba(34, 0, 51, .04), 0 6px 22px 4px rgba(7, 48, 114, .12), 0 6px 10px -4px rgba(14, 13, 26, .12);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .18s ease, box-shadow .18s ease;
 
   &::placeholder {
-    color: currentColor;
-    opacity: 0.2;
+    color: var(--muted);
+    opacity: .8;
   }
 
-}
-
-#notepad_features {
-
-  & > li {
-    @apply list-disc list-inside;
-    margin-bottom: 0.5em;
+  &:focus {
+    border-color: var(--link);
+    box-shadow: 0 0 0 4px rgba(93, 137, 255, .18);
   }
 
 }
@@ -123,36 +181,71 @@ nav.nav-links {
   }
 }
 
-// language switcher in the header (always visible, including on mobile)
-.lang-switch {
+// 头部中间的标语：窄屏时不挤出「孤字」，宁可整体缩小
+.header-banner {
+  @apply hidden md:block flex-grow text-center;
+  min-width: 0;
+  padding: 0 .5rem;
+
+  h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.35;
+    text-wrap: balance;
+  }
+}
+
+// 语言 / 主题切换器：共用一套分段控件（.seg）样式，始终可见（含手机）
+.seg {
   @apply flex items-center rounded shrink-0;
   margin-left: 0.5rem;
-  border: 1px solid #aab7b8;
-  background-color: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--border);
+  background-color: var(--surface);
   overflow: hidden;
 
-  .lang-btn {
-    @apply px-2 py-1 text-sm;
+  .seg-btn {
+    @apply text-sm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .25rem;
+    padding: .3rem .55rem;
     background: transparent;
     border: 0;
     cursor: pointer;
-    color: #2c3e50;
+    color: var(--text);
     line-height: 1.2;
     white-space: nowrap;
 
-    & + .lang-btn {
-      border-left: 1px solid #aab7b8;
+    & + .seg-btn {
+      border-left: 1px solid var(--border);
     }
 
     &:hover {
-      background-color: rgba(0, 0, 0, 0.06);
+      background-color: var(--surface-2);
     }
 
     &.active {
-      background-color: rgba(44, 62, 80, 0.16);
+      background-color: var(--surface-2);
       font-weight: 700;
       cursor: default;
+    }
+
+    svg {
+      display: block;
     }
   }
 }
 
+// 卡片式内容块（首页特性列表、编辑器工具条等复用）
+.card-like {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}

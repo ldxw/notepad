@@ -204,6 +204,13 @@ metas — no more Chinese text on an English page. A plain `SITE_TITLE=` without
 as the fallback for every language. The static HTML (what a crawler sees without running JS) uses
 the set matching `SITE_LANG`, or the `_EN` set when `SITE_LANG` is unset.
 
+### Themes
+
+The UI ships with three themes — **Auto** (follows the operating system), **Light** and **Dark** —
+switchable from the header on every page, remembered in `localStorage`. The default for first-time
+visitors comes from `SITE_THEME` (`auto` / `light` / `dark`; unset means `auto`). Every colour is a
+CSS variable in `frontend/src/sass/app.scss`, so a custom palette means editing that one block.
+
 ## :alarm_clock: Automatic backups (in-container cron)
 
 The image runs the archive job once a day, so you do not have to wire up your own cron:

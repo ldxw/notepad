@@ -196,6 +196,12 @@ SITE_TITLE_ZH="在线记事本"    SITE_TITLE_EN="Online Notepad - store your no
 不会再出现「英文页面顶着中文标题」。不带后缀的 `SITE_TITLE=…` 依然有效，作为所有语言的通用兜底。
 静态 HTML（爬虫不执行 JS 时看到的那份）用 `SITE_LANG` 指定语言的一套；`SITE_LANG` 没设则用 `_EN` 那套。
 
+### 主题
+
+界面自带三套主题 —— **跟随系统**、**浅色**、**深色**，在任何页面的头部都能切换，选择记在 `localStorage`。
+首次访问的默认主题由 `SITE_THEME` 决定（`auto` / `light` / `dark`，不设就是 `auto`）。
+所有配色都是 `frontend/src/sass/app.scss` 里的 CSS 变量，想换一套配色只改那一块即可。
+
 ## :alarm_clock: 自动备份（容器内 cron）
 
 镜像每天会自动跑一次归档任务，你不必自己再配 cron：
