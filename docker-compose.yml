@@ -34,6 +34,8 @@ services:
       TZ: ${TZ:-Asia/Shanghai}
       # 归档时间：标准 5 段 cron 表达式；"off" 可关闭。默认每天 03:30
       ARCHIVE_CRON: "${ARCHIVE_CRON:-30 3 * * *}"
+      # 归档下载开关：on（默认）→ /backups/ 公开可下载；off → 只列清单，下载入口与直链都拦掉
+      BACKUPS_DOWNLOAD: "${BACKUPS_DOWNLOAD:-on}"
 #    build:
 #      context: "."
 #      target: "runner"

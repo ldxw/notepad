@@ -142,7 +142,7 @@ setLocale("zh");        // 切换语言（会持久化，并同步 <html lang> �
 `frontend/site.config.js` 写进构建好的 `index.html`。之后可以在**容器启动时**用环境变量覆盖 ——
 无需重新构建。
 
-所有支持的变量（页面元信息、`SITE_LANG`、`TZ`、`ARCHIVE_CRON`）都在 **`.env.example`** 里列好并带注释，
+所有支持的变量（页面元信息、`SITE_LANG`、`TZ`、`ARCHIVE_CRON`、`BACKUPS_DOWNLOAD`）都在 **`.env.example`** 里列好并带注释，
 复制到 `docker-compose.yml` 旁边改一下即可：
 
 ```shell

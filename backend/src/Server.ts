@@ -76,8 +76,38 @@ export class Server {
     }
 
     /**
+     * 归档下载开关（运行时变量 BACKUPS_DOWNLOAD）：
+     *   不设（默认）/ on / true / 1 / yes  → 允许下载，和上游 notepad.mx 一样公开可下载；
+     *   off / false / 0 / no / disabled    → 关闭：列表页照旧列出文件名、大小、时间，
+     *                                        但不给下载入口，直接拼 /backups/<文件名> 也会被拦掉。
+     *
+     * 环境变量在进程启动时读取一次，改完需要重启容器。
+     */
+    protected static backupsDownloadEnabled(): boolean {
+
+        const raw = String(process.env.BACKUPS_DOWNLOAD === undefined ? "" : process.env.BACKUPS_DOWNLOAD)
+            .trim()
+            .toLowerCase();
+
+        if (!raw) {
+            return true;
+        }
+
+        return !["off", "false", "0", "no", "disable", "disabled"].includes(raw);
+    }
+
+    /** Accept-Language 里是否要中文文案 */
+    protected static prefersChinese(req: Request): boolean {
+
+        const accept = String(req.headers['accept-language'] || '');
+
+        return /(^|[,;\s])zh\b/i.test(accept) || accept.toLowerCase().indexOf('zh') === 0;
+    }
+
+    /**
      * 列出 public/backups 里的归档文件（就是 archive.sh / 容器内定时任务产出的那些）。
-     * 和上游 notepad.mx/backups/ 一样是公开的 —— 这就是「所有笔记都可导出」的那条路子。
+     * 和上游 notepad.mx/backups/ 一样是公开的 —— 这就是「所有笔记都可导出」的那条路子；
+     * 想关掉下载就把 BACKUPS_DOWNLOAD 设成 off。
      *
      * 页面是服务端渲染的纯 HTML + 内联 CSS（零依赖）：深/浅色随系统、卡片式、进场动效，
      * 文案按 Accept-Language 在中/英之间切换。
@@ -86,6 +116,22 @@ export class Server {
 
         const fs = require('fs');
         const backupsDir = path.join(publicDir, 'backups');
+
+        const canDownload = Server.backupsDownloadEnabled();
+
+        // 关闭下载时先在静态中间件之前拦一道：列表页照旧，但直接拼 URL 拿不到文件
+        this.app.get('/backups/:file', (req: Request, res: Response, next: NextFunction) => {
+
+            if (Server.backupsDownloadEnabled()) {
+                return next();
+            }
+
+            res.status(403)
+                .set('Content-Type', 'text/plain; charset=utf-8')
+                .send(Server.prefersChinese(req)
+                    ? "本实例已关闭备份下载（BACKUPS_DOWNLOAD=off）。"
+                    : "Backup downloads are disabled on this instance (BACKUPS_DOWNLOAD=off).");
+        });
 
         this.app.get(['/backups', '/backups/'], (req: Request, res: Response) => {
 
@@ -101,8 +147,7 @@ export class Server {
                 // 还没产生过备份（首次归档之前）—— 当作空目录处理
             }
 
-            const accept = String(req.headers['accept-language'] || '');
-            const zh = /(^|[,;\s])zh\b/i.test(accept) || accept.toLowerCase().indexOf('zh') === 0;
+            const zh = Server.prefersChinese(req);
 
             const totalSize = files.reduce((sum: number, f: any) => sum + f.size, 0);
 
@@ -115,12 +160,21 @@ export class Server {
                     ? `<span class="badge">${zh ? "最新" : "latest"}</span>`
                     : "";
 
-                return `<a class="card" href="/backups/${encodeURIComponent(f.name)}" download style="--i:${i}">
-  ${boxIcon}
+                const inner = `  ${boxIcon}
   <span class="meta">
     <span class="name">${Server.escapeHtml(f.name)}${badge}</span>
     <span class="sub">${Server.formatBytes(f.size)} · ${Server.formatTime(f.mtime)}</span>
-  </span>
+  </span>`;
+
+                if (!canDownload) {
+                    return `<div class="card static" style="--i:${i}">
+${inner}
+  <span class="dl off">${zh ? "已关闭下载" : "downloads off"}</span>
+</div>`;
+                }
+
+                return `<a class="card" href="/backups/${encodeURIComponent(f.name)}" download style="--i:${i}">
+${inner}
   <span class="dl">${zh ? "下载" : "download"} ↓</span>
 </a>`;
             }).join("\n");
@@ -132,6 +186,14 @@ export class Server {
       ? "容器内的定时任务（<code>ARCHIVE_CRON</code>，默认每天 03:30）会自动生成，也可以手动执行："
       : "The in-container cron job (<code>ARCHIVE_CRON</code>, 03:30 daily by default) creates them, or run it by hand:"}</p>
   <pre>docker exec -it notepad sh -c "sh backend/bin/archive.sh"</pre>
+</div>`;
+
+            // 关闭下载时的提示条
+            const notice = canDownload ? "" : `<div class="notice">
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+  <span>${zh
+      ? "管理员已关闭归档下载（<code>BACKUPS_DOWNLOAD=off</code>），这里只列出文件清单。"
+      : "Downloads are disabled by the administrator (<code>BACKUPS_DOWNLOAD=off</code>) — this page only lists the archives."}</span>
 </div>`;
 
             res.set('Content-Type', 'text/html; charset=utf-8');
@@ -179,6 +241,14 @@ export class Server {
   .summary { color: var(--muted); font-size: .875rem; margin: .4rem 0 0; }
   .back { display: inline-block; margin-bottom: 1.25rem; color: var(--muted); text-decoration: none; font-size: .875rem; }
   .back:hover { color: var(--accent); }
+  .notice {
+    display: flex; align-items: flex-start; gap: .6rem;
+    margin-top: 1.25rem; padding: .8rem 1rem;
+    background: var(--card); border: 1px dashed var(--border); border-radius: 12px;
+    color: var(--muted); font-size: .85rem;
+    animation: rise .45s cubic-bezier(.2,.7,.3,1) both;
+  }
+  .notice svg { color: var(--muted); flex: none; margin-top: .1rem; }
   .list { display: grid; gap: .6rem; margin-top: 1.75rem; }
   .card {
     display: flex; align-items: center; gap: .9rem;
@@ -195,6 +265,8 @@ export class Server {
   .card:hover { transform: translateY(-2px); border-color: var(--accent); }
   .card:active { transform: translateY(0); }
   .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card.static { cursor: default; }
+  .card.static:hover { transform: none; border-color: var(--border); }
   .icon { font-size: 1.35rem; line-height: 1; }
   .meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
   .name { font-weight: 600; word-break: break-all; display: flex; align-items: center; gap: .5rem; }
@@ -208,7 +280,9 @@ export class Server {
     color: var(--accent); font-size: .85rem; font-weight: 600;
     white-space: nowrap; opacity: .85; transition: opacity .18s, transform .18s;
   }
+  .dl.off { color: var(--muted); font-weight: 500; opacity: .9; }
   .card:hover .dl { opacity: 1; transform: translateX(2px); }
+  .card.static:hover .dl { transform: none; }
   .empty {
     margin-top: 2rem; padding: 2rem 1.25rem; text-align: center;
     background: var(--card); border: 1px dashed var(--border); border-radius: 14px;
@@ -244,14 +318,20 @@ export class Server {
         : (zh ? "本实例的加密笔记归档" : "Encrypted note archives of this instance")}</p>
   </header>
 
+  ${notice}
+
   ${files.length ? `<div class="list">\n${cards}\n</div>` : empty}
 
   <footer>
     ${zh
-      ? `这里是本实例 <code>backend/public/backups/</code> 里的归档，公开可下载。<br>
+      ? `这里是本实例 <code>backend/public/backups/</code> 里的归档，${canDownload
+          ? "公开可下载"
+          : "已由 <code>BACKUPS_DOWNLOAD</code> 关闭下载，仅列出清单"}。<br>
          文件里是加密后的笔记密文，没有对应口令无法解密；换 salt 或换机器时可以用它们把数据搬过去。<br>
          时间为容器本地时间${process.env.TZ ? `（TZ=${Server.escapeHtml(process.env.TZ)}）` : ""}。`
-      : `Archives from <code>backend/public/backups/</code> of this instance, public by design.<br>
+      : `Archives from <code>backend/public/backups/</code> of this instance, ${canDownload
+          ? "public by design"
+          : "listed only — downloads are off via <code>BACKUPS_DOWNLOAD</code>"}.<br>
          They contain encrypted note blobs only — useless without the matching passphrase — and can be
          unpacked into <code>backend/storage</code> to move data to another host or salt.<br>
          Times are the container's local time${process.env.TZ ? ` (TZ=${Server.escapeHtml(process.env.TZ)})` : ""}.`}
