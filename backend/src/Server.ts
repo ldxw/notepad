@@ -78,6 +78,9 @@ export class Server {
     /**
      * 列出 public/backups 里的归档文件（就是 archive.sh / 容器内定时任务产出的那些）。
      * 和上游 notepad.mx/backups/ 一样是公开的 —— 这就是「所有笔记都可导出」的那条路子。
+     *
+     * 页面是服务端渲染的纯 HTML + 内联 CSS（零依赖）：深/浅色随系统、卡片式、进场动效，
+     * 文案按 Accept-Language 在中/英之间切换。
      */
     protected enableBackupsIndex(publicDir: string) {
 
@@ -86,59 +89,174 @@ export class Server {
 
         this.app.get(['/backups', '/backups/'], (req: Request, res: Response) => {
 
-            let files: string[] = [];
+            let files: {name: string, size: number, mtime: Date}[] = [];
 
             try {
                 files = fs.readdirSync(backupsDir)
-                    .filter((name: string) => fs.statSync(path.join(backupsDir, name)).isFile())
-                    .sort((a: string, b: string) => fs.statSync(path.join(backupsDir, b)).mtimeMs - fs.statSync(path.join(backupsDir, a)).mtimeMs);
+                    .map((name: string) => ({name, full: path.join(backupsDir, name)}))
+                    .filter((f: any) => fs.statSync(f.full).isFile())
+                    .map((f: any) => ({name: f.name, size: fs.statSync(f.full).size, mtime: fs.statSync(f.full).mtime}))
+                    .sort((a: any, b: any) => b.mtime.getTime() - a.mtime.getTime());
             } catch (ex) {
                 // 还没产生过备份（首次归档之前）—— 当作空目录处理
             }
 
-            const rows = files.map((name: string) => {
+            const accept = String(req.headers['accept-language'] || '');
+            const zh = /(^|[,;\s])zh\b/i.test(accept) || accept.toLowerCase().indexOf('zh') === 0;
 
-                const stat = fs.statSync(path.join(backupsDir, name));
+            const totalSize = files.reduce((sum: number, f: any) => sum + f.size, 0);
 
-                return '<tr>'
-                    + '<td><a href="/backups/' + encodeURIComponent(name) + '">' + Server.escapeHtml(name) + '</a></td>'
-                    + '<td>' + Server.formatBytes(stat.size) + '</td>'
-                    + '<td>' + stat.mtime.toISOString().replace('T', ' ').slice(0, 19) + ' UTC</td>'
-                    + '</tr>';
-            }).join('\n');
+            // 用内联 SVG 而不是 emoji：不依赖系统 emoji 字体，任何环境都长一样
+            const boxIcon = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);flex:none" aria-hidden="true"><path d="M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/><rect x="2" y="3" width="20" height="5" rx="1.5"/><path d="M10 12h4"/></svg>`;
 
-            const empty = '<tr><td colspan="3" class="muted">还没有备份文件。'
-                + '容器内的定时任务（ARCHIVE_CRON，默认每天 03:30）会自动生成，'
-                + '也可以手动执行 <code>docker exec -it notepad sh -c "sh backend/bin/archive.sh"</code>。</td></tr>';
+            const cards = files.map((f: any, i: number) => {
+
+                const badge = i === 0
+                    ? `<span class="badge">${zh ? "最新" : "latest"}</span>`
+                    : "";
+
+                return `<a class="card" href="/backups/${encodeURIComponent(f.name)}" download style="--i:${i}">
+  ${boxIcon}
+  <span class="meta">
+    <span class="name">${Server.escapeHtml(f.name)}${badge}</span>
+    <span class="sub">${Server.formatBytes(f.size)} · ${Server.formatTime(f.mtime)}</span>
+  </span>
+  <span class="dl">${zh ? "下载" : "download"} ↓</span>
+</a>`;
+            }).join("\n");
+
+            const empty = `<div class="empty">
+  <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h3.4l2 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+  <p>${zh ? "还没有备份文件。" : "No archives yet."}</p>
+  <p class="muted">${zh
+      ? "容器内的定时任务（<code>ARCHIVE_CRON</code>，默认每天 03:30）会自动生成，也可以手动执行："
+      : "The in-container cron job (<code>ARCHIVE_CRON</code>, 03:30 daily by default) creates them, or run it by hand:"}</p>
+  <pre>docker exec -it notepad sh -c "sh backend/bin/archive.sh"</pre>
+</div>`;
 
             res.set('Content-Type', 'text/html; charset=utf-8');
             res.send(`<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="${zh ? "zh-CN" : "en"}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Backups</title>
+<meta name="robots" content="noindex">
+<title>${zh ? "备份文件" : "Backups"}</title>
 <style>
-  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; margin: 2.5rem auto; max-width: 46rem; padding: 0 1rem; color: #222; line-height: 1.5; }
-  h1 { font-size: 1.25rem; margin-bottom: .25rem; }
-  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-  th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid #eee; font-size: .92rem; }
-  th { color: #666; font-weight: 600; }
-  .muted { color: #777; font-size: .85rem; }
-  code { background: #f4f4f4; padding: .1rem .3rem; border-radius: 3px; font-size: .85em; }
-  a { color: #0b5fff; }
+  :root {
+    --bg: #f6f7f9;
+    --card: #ffffff;
+    --text: #16181d;
+    --muted: #6b7280;
+    --border: #e6e8ec;
+    --accent: #3b6ef6;
+    --shadow: 0 1px 2px rgba(16, 18, 27, .04), 0 8px 24px rgba(16, 18, 27, .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0e1014;
+      --card: #171a21;
+      --text: #e8eaf0;
+      --muted: #9aa1ad;
+      --border: #262b35;
+      --accent: #7aa2ff;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .35);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 3rem 1.25rem 4rem;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 44rem; margin: 0 auto; }
+  header { animation: rise .45s cubic-bezier(.2,.7,.3,1) both; }
+  .top { display: flex; align-items: baseline; gap: .75rem; flex-wrap: wrap; }
+  h1 { font-size: 1.5rem; margin: 0; letter-spacing: -.02em; }
+  .summary { color: var(--muted); font-size: .875rem; margin: .4rem 0 0; }
+  .back { display: inline-block; margin-bottom: 1.25rem; color: var(--muted); text-decoration: none; font-size: .875rem; }
+  .back:hover { color: var(--accent); }
+  .list { display: grid; gap: .6rem; margin-top: 1.75rem; }
+  .card {
+    display: flex; align-items: center; gap: .9rem;
+    padding: .9rem 1rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    text-decoration: none; color: inherit;
+    box-shadow: var(--shadow);
+    transition: transform .18s cubic-bezier(.2,.7,.3,1), border-color .18s, box-shadow .18s;
+    animation: rise .5s cubic-bezier(.2,.7,.3,1) both;
+    animation-delay: calc(var(--i, 0) * 45ms + 80ms);
+  }
+  .card:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .card:active { transform: translateY(0); }
+  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .icon { font-size: 1.35rem; line-height: 1; }
+  .meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .name { font-weight: 600; word-break: break-all; display: flex; align-items: center; gap: .5rem; }
+  .badge {
+    font-size: .68rem; font-weight: 600; letter-spacing: .02em;
+    color: var(--accent); border: 1px solid currentColor;
+    padding: .05rem .4rem; border-radius: 999px; white-space: nowrap;
+  }
+  .sub { color: var(--muted); font-size: .82rem; margin-top: .1rem; }
+  .dl {
+    color: var(--accent); font-size: .85rem; font-weight: 600;
+    white-space: nowrap; opacity: .85; transition: opacity .18s, transform .18s;
+  }
+  .card:hover .dl { opacity: 1; transform: translateX(2px); }
+  .empty {
+    margin-top: 2rem; padding: 2rem 1.25rem; text-align: center;
+    background: var(--card); border: 1px dashed var(--border); border-radius: 14px;
+    animation: rise .5s cubic-bezier(.2,.7,.3,1) both;
+  }
+  .empty-icon { font-size: 1.75rem; }
+  .empty p { margin: .5rem 0 0; }
+  .muted { color: var(--muted); font-size: .875rem; }
+  pre {
+    margin: 1rem auto 0; padding: .6rem .8rem; text-align: left;
+    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    overflow-x: auto; font-size: .8rem;
+  }
+  code { font-size: .85em; background: var(--bg); padding: .1rem .3rem; border-radius: 5px; }
+  footer { margin-top: 2.5rem; color: var(--muted); font-size: .78rem; line-height: 1.7; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
-<h1>📦 备份文件 / Backups</h1>
-<p class="muted">这里是本实例 <code>backend/public/backups/</code> 里的归档文件，公开可下载。
-文件里是加密后的笔记密文，没有对应口令无法解密；换 salt 或换实例时可以用它们把数据搬过去。</p>
-<table>
-<thead><tr><th>文件</th><th>大小</th><th>修改时间</th></tr></thead>
-<tbody>
-${rows || empty}
-</tbody>
-</table>
+<div class="wrap">
+  <a class="back" href="/">← ${zh ? "回到记事本" : "Back to notepad"}</a>
+  <header>
+    <div class="top">
+      <h1><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);vertical-align:-4px;margin-right:.35rem" aria-hidden="true"><path d="M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/><rect x="2" y="3" width="20" height="5" rx="1.5"/><path d="M10 12h4"/></svg>${zh ? "备份文件" : "Backups"}</h1>
+    </div>
+    <p class="summary">${files.length
+        ? (zh
+            ? `共 ${files.length} 个归档 · 合计 ${Server.formatBytes(totalSize)}`
+            : `${files.length} archive${files.length > 1 ? "s" : ""} · ${Server.formatBytes(totalSize)} total`)
+        : (zh ? "本实例的加密笔记归档" : "Encrypted note archives of this instance")}</p>
+  </header>
+
+  ${files.length ? `<div class="list">\n${cards}\n</div>` : empty}
+
+  <footer>
+    ${zh
+      ? `这里是本实例 <code>backend/public/backups/</code> 里的归档，公开可下载。<br>
+         文件里是加密后的笔记密文，没有对应口令无法解密；换 salt 或换机器时可以用它们把数据搬过去。<br>
+         时间为容器本地时间${process.env.TZ ? `（TZ=${Server.escapeHtml(process.env.TZ)}）` : ""}。`
+      : `Archives from <code>backend/public/backups/</code> of this instance, public by design.<br>
+         They contain encrypted note blobs only — useless without the matching passphrase — and can be
+         unpacked into <code>backend/storage</code> to move data to another host or salt.<br>
+         Times are the container's local time${process.env.TZ ? ` (TZ=${Server.escapeHtml(process.env.TZ)})` : ""}.`}
+  </footer>
+</div>
 </body>
 </html>`);
         });
@@ -166,6 +284,15 @@ ${rows || empty}
         }
 
         return (unit === 0 ? value : value.toFixed(1)) + " " + units[unit];
+    }
+
+    /** 容器本地时间（YYYY-MM-DD HH:mm） */
+    protected static formatTime(date: Date): string {
+
+        const pad = (n: number) => (n < 10 ? "0" : "") + n;
+
+        return date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate())
+            + " " + pad(date.getHours()) + ":" + pad(date.getMinutes());
     }
 
     protected registerNotFoundHandler() {
