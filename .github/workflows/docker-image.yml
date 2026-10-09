@@ -1,26 +1,149 @@
-name: Build Docker Image
+name: 多架构镜像构建与推送
 
+# 只在本分支(upstream-latest)推送或打 v* 标签时自动构建；
+# 默认分支(master)不参与，避免对默认分支产生任何新的自动行为。
+# 手动构建：Actions 页面 "Run workflow"（可选目标架构、是否推阿里云仓库）
 on:
   push:
     branches:
-      - master
+      - upstream-latest
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: "目标架构（默认双架构；只想快速构建可改选仅 amd64）"
+        type: choice
+        options:
+          - linux/amd64,linux/arm64
+          - linux/amd64
+        default: linux/amd64,linux/arm64
+      pushToAliyun:
+        description: "是否推送到阿里云 Docker 镜像仓库？"
+        type: boolean
+        required: true
+        default: false
+
+# ghcr.io 用内置 GITHUB_TOKEN 推送，只需要 packages: write
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # 多架构：amd64（常见 x86 服务器）+ arm64（Oracle ARM / 树莓派等）。
+  # 实测可行：仓库里已有的 ldxw/notepad 镜像 manifest 同时含 linux/amd64 与 linux/arm64。
+  PLATFORMS: linux/amd64,linux/arm64
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
+    # secrets 不能写在 if 条件里，所以先注入 env，再用 env 判断
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      ALIYUN_DOCKER_USERNAME: ${{ secrets.ALIYUN_DOCKER_USERNAME }}
+      ALIYUN_DOCKER_TOKEN: ${{ secrets.ALIYUN_DOCKER_TOKEN }}
+
     steps:
-      - name: Checkout repository
+      - name: 📥 拉取代码
         uses: actions/checkout@v4
 
-      - name: Login to Docker Hub
+      - name: 🧮 计算镜像地址
+        id: images
+        run: |
+          set -euo pipefail
+
+          owner="$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')"
+
+          # ghcr.io 始终可用（内置 GITHUB_TOKEN），所以默认一定推它
+          list="ghcr.io/${owner}/notepad"
+
+          if [ -n "${DOCKERHUB_USERNAME:-}" ] && [ -n "${DOCKERHUB_TOKEN:-}" ]; then
+            list="${list}"$'\n'"docker.io/${DOCKERHUB_USERNAME}/notepad"
+          else
+            echo "::notice::未配置 DOCKERHUB_USERNAME / DOCKERHUB_TOKEN，本次跳过 Docker Hub 推送"
+          fi
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+             && [ "${{ inputs.pushToAliyun }}" = "true" ] \
+             && [ -n "${ALIYUN_DOCKER_USERNAME:-}" ] && [ -n "${ALIYUN_DOCKER_TOKEN:-}" ]; then
+            list="${list}"$'\n'"registry.cn-hangzhou.aliyuncs.com/ldxw-git/notepad"
+          fi
+
+          echo "本次将推送的镜像地址："
+          echo "${list}"
+
+          {
+            echo "list<<__IMAGES_EOF__"
+            echo "${list}"
+            echo "__IMAGES_EOF__"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: 🛠️ 配置多架构支持 (QEMU)
+        uses: docker/setup-qemu-action@v3
+
+      - name: 🐳 配置 Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔒 登录 Docker Hub
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: docker.io
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
 
-      - name: Build Docker image
-        run: docker build -t athlon1600/notepad:latest .
+      - name: 🔒 登录 GitHub Packages (ghcr.io)
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Push Docker image
-        run: docker push athlon1600/notepad:latest
+      - name: 🔒 登录阿里云 Docker 镜像仓库
+        if: github.event_name == 'workflow_dispatch' && inputs.pushToAliyun && env.ALIYUN_DOCKER_USERNAME != '' && env.ALIYUN_DOCKER_TOKEN != ''
+        uses: docker/login-action@v3
+        with:
+          registry: registry.cn-hangzhou.aliyuncs.com
+          username: ${{ env.ALIYUN_DOCKER_USERNAME }}
+          password: ${{ env.ALIYUN_DOCKER_TOKEN }}
+
+      - name: 🏷️ 生成镜像标签
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.images.outputs.list }}
+          tags: |
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value={{branch}}-{{date 'YYYYMMDDHHmm'}}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+
+      - name: 🚀 构建并推送多架构镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: ${{ inputs.platforms || env.PLATFORMS }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 📋 汇总镜像地址
+        run: |
+          {
+            echo "### 已推送镜像"
+            echo ""
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
