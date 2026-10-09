@@ -5,6 +5,7 @@ import './sass/app.scss';
 import store from "./store";
 import {EasyStorage} from "./classes/EasyStorage";
 import {Util} from "./classes/Util";
+import {applyDocumentLocale} from "./i18n";
 
 const STORAGE_SESSION_ID_KEY = 'session_id';
 
@@ -21,6 +22,9 @@ const bootSession = function () {
 }
 
 bootSession();
+
+// sync <html lang> and <title> with the locale picked at boot
+applyDocumentLocale();
 
 
 const app = createApp(App).mount('#app')

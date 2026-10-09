@@ -12,9 +12,20 @@
 
     <div class="hidden md:block flex-grow text-center items-center mb-0" v-html="banner"></div>
 
-      <nav class="nav-links hidden md:flex">
-          <a href="https://github.com/Athlon1600/notepad" target="_blank" rel="nofollow noopener noreferrer">GitHub Repo</a>
-      </nav>
+      <div class="flex items-center shrink-0">
+          <nav class="nav-links hidden md:flex">
+              <a href="https://github.com/Athlon1600/notepad" target="_blank" rel="nofollow noopener noreferrer">{{ t('app.githubRepo') }}</a>
+          </nav>
+
+          <div class="lang-switch" :title="t('lang.switch')" :aria-label="t('lang.label')">
+              <button type="button"
+                      v-for="l in locales"
+                      :key="l.code"
+                      :class="['lang-btn', {active: l.code === currentLocale}]"
+                      :aria-pressed="l.code === currentLocale"
+                      @click="setLocale(l.code)">{{ l.label }}</button>
+          </div>
+      </div>
 
   </div>
 
@@ -28,7 +39,7 @@ import Editor from "./Editor.vue";
 import Home from "./Home.vue";
 
 import store from "../store";
-import {HEADER_TEXT} from "../config";
+import {t, locale, setLocale, availableLocales} from "../i18n";
 
 export default {
   components: {
@@ -38,12 +49,18 @@ export default {
   data() {
     return {
       state: store.state,
-        banner: HEADER_TEXT
+      locales: availableLocales
     }
   },
   computed: {
     error() {
       return store.state.error
+    },
+    banner() {
+        return t('app.banner')
+    },
+    currentLocale() {
+        return locale.value
     },
     noteColor(){
         if (store.state.authKey) {
@@ -63,6 +80,8 @@ export default {
     }
   },
   methods: {
+    t,
+    setLocale,
     goHome() {
       store.actions.reset();
     }

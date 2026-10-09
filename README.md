@@ -112,6 +112,30 @@ You may also do your own backups periodically by running this command (typically
 docker exec -it notepad sh -c "sh backend/bin/archive.sh"
 ```
 
+## :globe_with_meridians: Languages / 多语言
+
+The UI ships with **English** and **简体中文**. A language switcher (English / 中文) sits in the
+header on every page — including the homepage — and the choice is remembered in `localStorage`.
+On a first visit the app auto-detects the browser language (`zh*` → Chinese, everything else → English).
+
+All copy lives in `frontend/src/i18n.js`, a tiny hand-rolled i18n module (no extra dependency):
+
+```js
+import {t, setLocale, locale} from "../i18n";
+
+t("home.loginTitle");   // translate a key for the active locale
+setLocale("zh");        // switch language (persists + updates <html lang> and <title>)
+```
+
+Missing keys fall back to English and then to the key itself, so a partial translation is safe.
+
+### Adding another language
+
+1. Copy the `en` block inside `messages` in `frontend/src/i18n.js` and translate the values.
+2. Add `{code: "...", label: "..."}` to `availableLocales` in the same file.
+
+That is all — the switcher picks it up automatically.
+
 ## Troubleshooting
 
 > ERROR in [prerender-spa-plugin] Unable to prerender all routes!  

@@ -123,3 +123,36 @@ nav.nav-links {
   }
 }
 
+// language switcher in the header (always visible, including on mobile)
+.lang-switch {
+  @apply flex items-center rounded shrink-0;
+  margin-left: 0.5rem;
+  border: 1px solid #aab7b8;
+  background-color: rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+
+  .lang-btn {
+    @apply px-2 py-1 text-sm;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    color: #2c3e50;
+    line-height: 1.2;
+    white-space: nowrap;
+
+    & + .lang-btn {
+      border-left: 1px solid #aab7b8;
+    }
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.06);
+    }
+
+    &.active {
+      background-color: rgba(44, 62, 80, 0.16);
+      font-weight: 700;
+      cursor: default;
+    }
+  }
+}
+

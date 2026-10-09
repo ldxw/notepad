@@ -2,25 +2,25 @@
   <div class="w-full max-w-screen-lg mx-auto flex flex-col flex-grow mt-5 px-1 lg:px-0">
 
     <div class="toolbar">
-      <p>🔒 All text is automatically encrypted and saved as you type.</p>
+      <p>{{ t('editor.toolbar') }}</p>
     </div>
 
     <div id="plain_text_not_ace" class="flex flex-col flex-grow">
 
       <textarea @keyup="textKeyUp" @keydown="textKeyDown" @select="textSelect" @mouseup="textSelect" v-model="text"
-                placeholder="Nothing written here yet! Write something!" style="resize: none"
+                :placeholder="t('editor.placeholder')" style="resize: none"
                 class="flex-grow"></textarea>
 
       <div class="flex justify-between mt-2 mb-5">
 
         <div class="status-bar">
-          Words: {{ wordCount }},
-          Characters: <span v-if="selectedCharCount">{{ selectedCharCount }}/</span>{{ charCount }},
-          Lines: {{ lineCount }}
+          {{ t('editor.words') }}: {{ wordCount }},
+          {{ t('editor.characters') }}: <span v-if="selectedCharCount">{{ selectedCharCount }}/</span>{{ charCount }},
+          {{ t('editor.lines') }}: {{ lineCount }}
         </div>
 
         <div>
-          <a href="" @click.prevent="deleteForever" class="font-bold text-red-500">Delete Forever</a>
+          <a href="" @click.prevent="deleteForever" class="font-bold text-red-500">{{ t('editor.deleteForever') }}</a>
         </div>
 
       </div>
@@ -37,6 +37,7 @@ import {TextUtil} from "../classes/TextUtil";
 import debounce from "debounce";
 import store from "../store";
 import {SecureStorage} from "../classes/SecureStorage";
+import {t} from "../i18n";
 
 // https://github.com/reddit-archive/reddit/blob/753b17407e9a9dca09558526805922de24133d53/r2/r2/models/link.py#L149
 const TEXT_MAX_LEN = 40000;
@@ -57,6 +58,7 @@ export default {
     // nothing
   },
   methods: {
+    t,
     writeNow: async function () {
 
       try {
@@ -69,7 +71,7 @@ export default {
 
       } catch (ex) {
         const errorString = ex?.message || ex;
-        alert('Something went wrong during saving: ' + errorString);
+        alert(t('editor.saveFailed') + errorString);
       }
 
     },
@@ -108,14 +110,14 @@ export default {
     },
     deleteForever() {
 
-      if (confirm('Are you sure?? This action cannot be undone')) {
+      if (confirm(t('editor.confirmDelete'))) {
 
             const key = store.state.authKey;
 
             SecureStorage.remove(key).then(() => {
                 store.actions.reset();
             }).catch(() => {
-                alert('Failed to delete');
+                alert(t('editor.deleteFailed'));
             });
       }
 
