@@ -57,6 +57,9 @@ const webpackConfig = {
         new HtmlWebpackPlugin({
             title: site.title,
             template: "public/index.html",
+            // 把 public/favicon.ico 复制进 dist/ 并自动注入 <link rel="icon">；
+            // 运行时可以用 SITE_ICON 覆盖掉这个 href（见 backend/src/SiteMeta.ts）
+            favicon: path.resolve(__dirname, "public/favicon.ico"),
             inject: true,
             minify: false,
             hash: true,

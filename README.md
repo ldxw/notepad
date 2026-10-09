@@ -186,6 +186,9 @@ always wins.
 overrides are present in the HTML itself — search engines see them too. Any variable left unset or
 empty keeps the build-time default, and the boot log lists what was overridden.
 
+The favicon follows the same rule: set `SITE_ICON` to a URL or a path (`/my.ico`) to replace the
+built-in `favicon.ico`; leave it empty to keep the default icon.
+
 ## :alarm_clock: Automatic backups (in-container cron)
 
 The image runs the archive job once a day, so you do not have to wire up your own cron:

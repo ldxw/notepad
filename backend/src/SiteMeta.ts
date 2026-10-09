@@ -29,7 +29,8 @@ export class SiteMeta {
         author: "SITE_AUTHOR",
         lang: "SITE_LANG",
         salt: "SITE_SALT",
-        siteName: "SITE_NAME"
+        siteName: "SITE_NAME",
+        icon: "SITE_ICON"
     };
 
     /**
@@ -72,6 +73,26 @@ export class SiteMeta {
         }
 
         const tag = '<meta name="' + name + '" content="' + SiteMeta.escapeAttr(value) + '">';
+
+        if (/<head[^>]*>/i.test(html)) {
+            return html.replace(/(<head[^>]*>)/i, (_match: string, open: string) => open + "\n    " + tag);
+        }
+
+        return html.replace(/(<\/head>)/i, "  " + tag + "\n$1");
+    }
+
+    /** 替换（没有则插入）favicon：<link rel="icon" href="..."> */
+    protected static setIcon(html: string, href: string): string {
+
+        const pattern = /(<link\s+[^>]*rel="(?:shortcut )?icon"[^>]*href=")([^"]*)(")/i;
+
+        if (pattern.test(html)) {
+            return html.replace(pattern, (_match: string, open: string, _old: string, close: string) => {
+                return open + SiteMeta.escapeAttr(href) + close;
+            });
+        }
+
+        const tag = '<link rel="icon" href="' + SiteMeta.escapeAttr(href) + '">';
 
         if (/<head[^>]*>/i.test(html)) {
             return html.replace(/(<head[^>]*>)/i, (_match: string, open: string) => open + "\n    " + tag);
@@ -145,6 +166,13 @@ export class SiteMeta {
 
         if (siteName) {
             html = SiteMeta.setMeta(html, "site-name", siteName);
+        }
+
+        // favicon：只有设了 SITE_ICON 才替换，否则保留构建时注入的默认图标
+        const icon = env[SiteMeta.ENV.icon];
+
+        if (icon) {
+            html = SiteMeta.setIcon(html, icon);
         }
 
         if (description) {
