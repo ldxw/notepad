@@ -231,6 +231,13 @@ docker exec -it notepad tail -n 20 /var/log/archive-cron.log
 docker exec -it notepad ls -lh backend/public/backups/
 ```
 
+### Browsing the backups
+
+`backend/public/backups/` is listed at **`/backups/`** — the same idea as upstream's
+`notepad.mx/backups/`: the page shows every archive with its size and date, and each one downloads
+straight from there. Only encrypted blobs live in that directory, so exposing it is safe; the
+homepage's download link points at it too.
+
 ## Troubleshooting
 
 ### Prerendering

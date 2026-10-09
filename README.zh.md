@@ -223,6 +223,12 @@ docker exec -it notepad tail -n 20 /var/log/archive-cron.log
 docker exec -it notepad ls -lh backend/public/backups/
 ```
 
+### 备份文件在哪看
+
+`archive.sh` 与容器内定时任务产出的归档都放在 `backend/public/backups/`，访问 **`/backups/`**
+就能看到列表（文件名、大小、修改时间）并直接下载 —— 和上游 `notepad.mx/backups/` 一个思路。
+目录里只有加密后的密文，公开暴露是安全的；首页那段说明里的下载链接也指向这里。
+
 ## 排错
 
 ### 预渲染

@@ -52,7 +52,7 @@
             <p v-html="t('home.securityP2')"></p>
 
             <p>
-                <a href="https://notepad.mx/backups/" target="_blank">https://notepad.mx/backups/</a>
+                <a href="/backups/" target="_blank">/backups/</a>
                 <br>
                 <span v-html="t('home.securityP3')"></span>
             </p>
