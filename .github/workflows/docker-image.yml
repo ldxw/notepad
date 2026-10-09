@@ -1,13 +1,13 @@
 name: 多架构镜像构建与推送
 
-# 自动构建：推送到 upstream-latest 或打 v* 标签时触发（默认三个仓库全部推送）
-# 手动构建：Actions 页面 "Run workflow" —— 三个仓库开关（默认全开）+ 强制构建
+# 只保留**手动构建**：Actions 页面 → Run workflow（三个仓库开关默认全开 + 强制构建）
+# 自动构建已关闭 —— 原来的 push / tag 触发注释在下面，需要时解开即可。
 on:
-  push:
-    branches:
-      - upstream-latest
-    tags:
-      - "v*"
+  # push:
+  #   branches:
+  #     - upstream-latest
+  #   tags:
+  #     - "v*"
 
   workflow_dispatch:
     inputs:
