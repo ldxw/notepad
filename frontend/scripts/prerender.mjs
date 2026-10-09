@@ -42,9 +42,16 @@ const before = readFileSync(INDEX, "utf8").length;
 
 console.log(`[prerender] 使用 ${chrome}`);
 
+// --no-zygote / --single-process：多架构构建里 arm64 那条腿是 QEMU 模拟执行，
+// Chrome 的多进程架构（zygote / GPU 子进程）在模拟环境下起不来，会报
+// "Did not receive ping from zygote child" / "GPU process launch failed"，然后渲染失败。
+// 单进程模式可以绕开这个问题，对一次性的 --dump-dom 渲染没有副作用。
 const result = spawnSync(chrome, [
     "--no-sandbox",
+    "--no-zygote",
+    "--single-process",
     "--disable-gpu",
+    "--disable-software-rasterizer",
     "--disable-dev-shm-usage",
     "--hide-scrollbars",
     "--virtual-time-budget=10000",
