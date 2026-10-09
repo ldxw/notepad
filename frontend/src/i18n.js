@@ -17,9 +17,19 @@ export const messages = {
         "lang.switch": "Switch language",
 
         "theme.label": "Theme",
+        "theme.pick": "Choose a theme",
         "theme.auto": "Auto",
         "theme.light": "Light",
         "theme.dark": "Dark",
+
+        "skin.classic": "Classic",
+        "skin.paper": "Paper",
+        "skin.ocean": "Ocean",
+        "skin.forest": "Forest",
+        "skin.grape": "Grape",
+        "skin.sunset": "Sunset",
+        "skin.mono": "Mono",
+        "skin.neon": "Neon",
 
         "home.loginTitle": "🔑 Login with a unique passphrase",
         "home.phrasePlaceholder": "e.g: correct horse battery staple",
@@ -89,9 +99,19 @@ export const messages = {
         "lang.switch": "切换语言",
 
         "theme.label": "主题",
+        "theme.pick": "选择主题",
         "theme.auto": "跟随系统",
         "theme.light": "浅色",
         "theme.dark": "深色",
+
+        "skin.classic": "经典",
+        "skin.paper": "纸张",
+        "skin.ocean": "海洋",
+        "skin.forest": "森林",
+        "skin.grape": "葡萄",
+        "skin.sunset": "落日",
+        "skin.mono": "极简",
+        "skin.neon": "霓虹",
 
         "home.loginTitle": "🔑 用一句独一无二的口令登录",
         "home.phrasePlaceholder": "例如：正确的马 电池 订书钉",

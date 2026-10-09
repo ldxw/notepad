@@ -206,10 +206,18 @@ the set matching `SITE_LANG`, or the `_EN` set when `SITE_LANG` is unset.
 
 ### Themes
 
-The UI ships with three themes — **Auto** (follows the operating system), **Light** and **Dark** —
-switchable from the header on every page, remembered in `localStorage`. The default for first-time
-visitors comes from `SITE_THEME` (`auto` / `light` / `dark`; unset means `auto`). Every colour is a
-CSS variable in `frontend/src/sass/app.scss`, so a custom palette means editing that one block.
+Two independent choices, both in the header and both remembered in `localStorage`:
+
+* **Mode** — Auto (follows the OS), Light, Dark. The default for first-time visitors comes from
+  `SITE_THEME` (`auto` / `light` / `dark`; unset means `auto`).
+* **Skin** — the whole colour scheme, picked from the palette button: `classic` (default), `paper`
+  (serif), `ocean`, `forest`, `grape`, `sunset`, `mono` (monospace) and `neon`. The default comes
+  from `SITE_SKIN`.
+
+Every skin ships a light *and* a dark palette, so any skin combines with any mode. Adding your own
+is one entry in the `skins` array in `frontend/src/theme.js` — a palette is just `--bg`, `--surface`,
+`--text`, `--accent`, `--link`, `--border` and `--muted`, plus the optional `--font-body` /
+`--radius`. `frontend/src/sass/app.scss` only keeps the fallback used before the JS runs.
 
 ## :alarm_clock: Automatic backups (in-container cron)
 

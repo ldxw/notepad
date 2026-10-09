@@ -28,12 +28,40 @@
 
           <div class="seg" :title="t('theme.label')" :aria-label="t('theme.label')">
               <button type="button"
-                      v-for="th in themeOptions"
-                      :key="th.code"
-                      :class="['seg-btn', {active: th.code === currentTheme}]"
-                      :aria-pressed="th.code === currentTheme"
-                      :title="t(th.labelKey)"
-                      @click="setTheme(th.code)" v-html="themeIcon(th.code)"></button>
+                      v-for="m in themeOptions"
+                      :key="m.code"
+                      :class="['seg-btn', {active: m.code === currentMode}]"
+                      :aria-pressed="m.code === currentMode"
+                      :title="t(m.labelKey)"
+                      @click="setMode(m.code)" v-html="themeIcon(m.code)"></button>
+          </div>
+
+          <div class="seg theme-wrap" ref="themeWrap">
+              <button type="button"
+                      class="seg-btn"
+                      :title="t('theme.pick')"
+                      :aria-label="t('theme.pick')"
+                      aria-haspopup="true"
+                      :aria-expanded="themePanelOpen ? 'true' : 'false'"
+                      :class="{active: themePanelOpen}"
+                      @click.stop="themePanelOpen = !themePanelOpen"
+                      v-html="paletteIcon"></button>
+
+              <div v-if="themePanelOpen" class="theme-panel">
+                  <div class="theme-panel-title">{{ t('theme.pick') }}</div>
+                  <div class="theme-grid">
+                      <button type="button"
+                              class="theme-card"
+                              v-for="s in skinList"
+                              :key="s.id"
+                              :class="{active: s.id === currentSkin}"
+                              :aria-pressed="s.id === currentSkin"
+                              @click="pickSkin(s.id)">
+                          <span class="theme-swatch" :style="swatchStyle(s.id)"><i></i></span>
+                          <span class="theme-name">{{ t(s.labelKey) }}</span>
+                      </button>
+                  </div>
+              </div>
           </div>
       </div>
 
@@ -50,7 +78,7 @@ import Home from "./Home.vue";
 
 import store from "../store";
 import {t, locale, setLocale, availableLocales, siteNameFor} from "../i18n";
-import {themes, theme, setTheme, themeIcon} from "../theme";
+import {modes, mode, setMode, themeIcon, PALETTE_ICON, skins, skin, setSkin, swatchFor, isDark} from "../theme";
 
 export default {
   components: {
@@ -61,7 +89,10 @@ export default {
     return {
       state: store.state,
       locales: availableLocales,
-      themeOptions: themes
+      themeOptions: modes,
+      skinList: skins,
+      paletteIcon: PALETTE_ICON,
+      themePanelOpen: false
     }
   },
   computed: {
@@ -69,8 +100,11 @@ export default {
     siteName() {
         return siteNameFor(locale.value)
     },
-    currentTheme() {
-        return theme.value
+    currentMode() {
+        return mode.value
+    },
+    currentSkin() {
+        return skin.value
     },
     error() {
       return store.state.error
@@ -87,7 +121,7 @@ export default {
             return '#' + hex;
         }
 
-        // 未登录时用主题色，跟着深浅色切换
+        // 未登录时用主题底色，跟着皮肤/深浅色切换
         return 'var(--header-bg)';
     },
     documentIdShort() {
@@ -102,11 +136,39 @@ export default {
   methods: {
     t,
     setLocale,
-    setTheme,
+    setMode,
     themeIcon,
+    pickSkin(id) {
+      setSkin(id);
+      this.themePanelOpen = false;
+    },
+    // 面板里的预览色块用「当前明暗」下的那套色板
+    swatchStyle(id) {
+      return swatchFor(id, isDark());
+    },
+    onDocumentClick(e) {
+      const wrap = this.$refs.themeWrap;
+
+      if (wrap && !wrap.contains(e.target)) {
+        this.themePanelOpen = false;
+      }
+    },
+    onDocumentKeydown(e) {
+      if (e.key === 'Escape') {
+        this.themePanelOpen = false;
+      }
+    },
     goHome() {
       store.actions.reset();
     }
+  },
+  mounted() {
+    document.addEventListener('click', this.onDocumentClick);
+    document.addEventListener('keydown', this.onDocumentKeydown);
+  },
+  unmounted() {
+    document.removeEventListener('click', this.onDocumentClick);
+    document.removeEventListener('keydown', this.onDocumentKeydown);
   }
 }
 </script>

@@ -66,7 +66,8 @@ html {
 }
 
 body {
-  font-family: system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  // 字体也可以被皮肤覆盖（纸张主题走衬线、极简主题走等宽）
+  font-family: var(--font-body, system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif);
   background-color: var(--bg);
   color: var(--text);
 }

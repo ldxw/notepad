@@ -32,7 +32,8 @@ export class SiteMeta {
         salt: "SITE_SALT",
         siteName: "SITE_NAME",
         icon: "SITE_ICON",
-        theme: "SITE_THEME"
+        theme: "SITE_THEME",
+        skin: "SITE_SKIN"
     };
 
     /** 支持 _ZH / _EN 后缀的项：环境变量基础名 → 注入给前端的 meta 名前缀 */
@@ -244,6 +245,18 @@ export class SiteMeta {
             html = SiteMeta.setMeta(html, "site-theme", theme);
         } else if (theme) {
             console.warn(`[meta] SITE_THEME="${theme}" 暂不支持（只有 auto / light / dark），已忽略`);
+        }
+
+        // 默认皮肤（整站配色）：前端内置若干个，这里只校验格式，
+        // 不认识的值前端会忽略并回落到默认皮肤
+        const skin = (env[SiteMeta.ENV.skin] || "").trim().toLowerCase();
+
+        if (skin) {
+            if (/^[a-z0-9-]+$/.test(skin)) {
+                html = SiteMeta.setMeta(html, "site-skin", skin);
+            } else {
+                console.warn(`[meta] SITE_SKIN="${skin}" 格式不对（只允许小写字母、数字、-），已忽略`);
+            }
         }
 
         return html;
