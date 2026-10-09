@@ -189,6 +189,21 @@ empty keeps the build-time default, and the boot log lists what was overridden.
 The favicon follows the same rule: set `SITE_ICON` to a URL or a path (`/my.ico`) to replace the
 built-in `favicon.ico`; leave it empty to keep the default icon.
 
+### Per-language values
+
+`SITE_TITLE`, `SITE_DESCRIPTION`, `SITE_KEYWORDS` and `SITE_NAME` all accept a `_ZH` / `_EN` suffix,
+so one deployment can carry both languages:
+
+```bash
+SITE_NAME_ZH="我的记事本"    SITE_NAME_EN="My Notepad"
+SITE_TITLE_ZH="在线记事本"    SITE_TITLE_EN="Online Notepad - store your notes securely online"
+```
+
+Switching the UI language then swaps the header name, `<title>` and the description / keywords
+metas — no more Chinese text on an English page. A plain `SITE_TITLE=` without a suffix still works
+as the fallback for every language. The static HTML (what a crawler sees without running JS) uses
+the set matching `SITE_LANG`, or the `_EN` set when `SITE_LANG` is unset.
+
 ## :alarm_clock: Automatic backups (in-container cron)
 
 The image runs the archive job once a day, so you do not have to wire up your own cron:

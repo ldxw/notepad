@@ -7,19 +7,26 @@ services:
     environment:
       NODE_ENV: production
       # ── 运行时页面元信息（留空 = 用构建时 site.config.js 里的默认值）──────────
-      # 这些值在容器启动时注入到 index.html，改完重启容器即可生效，无需重新构建镜像：
-      #   SITE_TITLE="我的记事本" SITE_DESCRIPTION="..." docker compose up -d
-      # 也可以写在同目录的 .env 文件里。
+      # 语言相关项支持 _ZH / _EN 后缀：中文界面用 _ZH、英文界面用 _EN，
+      # 切换语言时 <title>、description/keywords、页头名字都会跟着换；
+      # 不带后缀的是所有语言的通用兜底。改完重启容器即生效，无需重新构建。
       SITE_TITLE: ${SITE_TITLE:-}
+      SITE_TITLE_ZH: ${SITE_TITLE_ZH:-}
+      SITE_TITLE_EN: ${SITE_TITLE_EN:-}
       SITE_DESCRIPTION: ${SITE_DESCRIPTION:-}
+      SITE_DESCRIPTION_ZH: ${SITE_DESCRIPTION_ZH:-}
+      SITE_DESCRIPTION_EN: ${SITE_DESCRIPTION_EN:-}
       SITE_KEYWORDS: ${SITE_KEYWORDS:-}
+      SITE_KEYWORDS_ZH: ${SITE_KEYWORDS_ZH:-}
+      SITE_KEYWORDS_EN: ${SITE_KEYWORDS_EN:-}
       SITE_AUTHOR: ${SITE_AUTHOR:-}
+      SITE_NAME: ${SITE_NAME:-}
+      SITE_NAME_ZH: ${SITE_NAME_ZH:-}
+      SITE_NAME_EN: ${SITE_NAME_EN:-}
       # 默认界面语言：auto（跟随浏览器，默认）/ zh / en
       SITE_LANG: ${SITE_LANG:-}
       # 口令哈希用的 salt（默认 notepad.mx；换掉后与其它实例的笔记互不通用，见 README）
       SITE_SALT: ${SITE_SALT:-}
-      # 页头左上角显示的名字（默认 notepad.mx）
-      SITE_NAME: ${SITE_NAME:-}
       # 站点图标：填完整 URL 或 /my.ico 这样的路径；留空用内置的 favicon.ico
       SITE_ICON: ${SITE_ICON:-}
       # ── 容器内定时归档（backend/bin/archive.sh）────────────────────────────

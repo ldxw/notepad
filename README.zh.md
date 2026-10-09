@@ -182,6 +182,20 @@ docker run -d -p 3000:3000 \
 站点图标同理：`SITE_ICON` 填完整 URL 或 `/my.ico` 这样的路径即可替换内置的 `favicon.ico`；
 留空则继续用默认图标。
 
+### 中英两套值
+
+`SITE_TITLE`、`SITE_DESCRIPTION`、`SITE_KEYWORDS`、`SITE_NAME` 都支持 `_ZH` / `_EN` 后缀，
+所以一份部署可以同时带中英两套：
+
+```bash
+SITE_NAME_ZH="我的记事本"    SITE_NAME_EN="My Notepad"
+SITE_TITLE_ZH="在线记事本"    SITE_TITLE_EN="Online Notepad - store your notes securely online"
+```
+
+切换界面语言时，页头名字、`<title>` 和 description / keywords 会一起跟着换 ——
+不会再出现「英文页面顶着中文标题」。不带后缀的 `SITE_TITLE=…` 依然有效，作为所有语言的通用兜底。
+静态 HTML（爬虫不执行 JS 时看到的那份）用 `SITE_LANG` 指定语言的一套；`SITE_LANG` 没设则用 `_EN` 那套。
+
 ## :alarm_clock: 自动备份（容器内 cron）
 
 镜像每天会自动跑一次归档任务，你不必自己再配 cron：

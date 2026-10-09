@@ -136,10 +136,32 @@ export const availableLocales = [
     {code: "zh", label: "中文"}
 ];
 
+/** 读取后端注入的 <meta name="..."> 的 content；拿不到返回空串 */
+function injectedMeta(name) {
+
+    if (typeof document === "undefined" || !document.querySelector) {
+        return "";
+    }
+
+    const el = document.querySelector(`meta[name="${name}"]`);
+
+    return el && el.getAttribute ? (el.getAttribute("content") || "").trim() : "";
+}
+
+// 标题：后端可以用 SITE_TITLE_ZH / SITE_TITLE_EN 覆盖（见 backend/src/SiteMeta.ts），
+// 页面语言一变，applyDocumentLocale() 会把 <title> 换成对应的那一份。
 const TITLES = {
-    en: "Online Notepad - store your notes securely online",
-    zh: "在线记事本 - 安全地把笔记保存在网上"
+    en: injectedMeta("site-title-en") || "Online Notepad - store your notes securely online",
+    zh: injectedMeta("site-title-zh") || "在线记事本 - 安全地把笔记保存在网上"
 };
+
+/**
+ * 页头左上角显示的名字：优先 SITE_NAME_<当前语言>，其次通用的 SITE_NAME，
+ * 最后才是内置默认值。这样中英界面各显示各的，不会"英文页面顶着中文站名"。
+ */
+export function siteNameFor(code) {
+    return injectedMeta("site-name-" + code) || injectedMeta("site-name") || "notepad.mx";
+}
 
 function detectLocale() {
 
@@ -170,12 +192,7 @@ function detectLocale() {
 /** 读出后端注入的默认语言；没有或不是已知语言时返回 null */
 function injectedDefaultLocale() {
 
-    if (typeof document === "undefined" || !document.querySelector) {
-        return null;
-    }
-
-    const meta = document.querySelector('meta[name="default-locale"]');
-    const code = meta && meta.getAttribute ? (meta.getAttribute("content") || "").trim().toLowerCase() : "";
+    const code = injectedMeta("default-locale").toLowerCase();
 
     return messages[code] ? code : null;
 }
@@ -230,7 +247,11 @@ export function setLocale(code) {
     applyDocumentLocale();
 }
 
-/** Keep <html lang> and the document title in sync with the active locale. */
+/**
+ * Keep <html lang>, the document title and the language-dependent metas in sync with the
+ * active locale. The values themselves may be overridden per language by the backend
+ * (SITE_TITLE_ZH / SITE_DESCRIPTION_ZH / … — see backend/src/SiteMeta.ts).
+ */
 export function applyDocumentLocale() {
 
     if (typeof document === "undefined") {
@@ -241,4 +262,20 @@ export function applyDocumentLocale() {
 
     document.documentElement.lang = code === "zh" ? "zh-CN" : code;
     document.title = TITLES[code] || TITLES.en;
+
+    // description / keywords 也跟着语言走
+    ["description", "keywords"].forEach((name) => {
+
+        const value = injectedMeta("site-" + name + "-" + code);
+
+        if (!value) {
+            return;
+        }
+
+        const el = document.querySelector(`meta[name="${name}"]`);
+
+        if (el) {
+            el.setAttribute("content", value);
+        }
+    });
 }

@@ -39,8 +39,7 @@ import Editor from "./Editor.vue";
 import Home from "./Home.vue";
 
 import store from "../store";
-import {SITE_NAME} from "../config";
-import {t, locale, setLocale, availableLocales} from "../i18n";
+import {t, locale, setLocale, availableLocales, siteNameFor} from "../i18n";
 
 export default {
   components: {
@@ -50,11 +49,14 @@ export default {
   data() {
     return {
       state: store.state,
-      locales: availableLocales,
-      siteName: SITE_NAME
+      locales: availableLocales
     }
   },
   computed: {
+    // 页头名字跟着界面语言走（可用 SITE_NAME_ZH / SITE_NAME_EN 分别指定）
+    siteName() {
+        return siteNameFor(locale.value)
+    },
     error() {
       return store.state.error
     },
