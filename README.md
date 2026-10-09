@@ -165,6 +165,33 @@ Or via `docker-compose.yml` / a `.env` file next to it:
 overrides are present in the HTML itself — search engines see them too. Any variable left unset or
 empty keeps the build-time default, and the boot log lists what was overridden.
 
+## :alarm_clock: Automatic backups (in-container cron)
+
+The image runs the archive job once a day, so you do not have to wire up your own cron:
+
+```bash
+docker exec -it notepad sh -c "sh backend/bin/archive.sh"   # what the job runs
+```
+
+`backend/storage` is packed into `backend/public/backups/` (both are host-mounted volumes, so the
+archives survive container restarts) every day at **03:30**.
+
+Both the schedule and the timezone are environment variables - no rebuild needed:
+
+```yaml
+    environment:
+      TZ: Asia/Shanghai          # the hour below is interpreted in this timezone (container default is UTC)
+      ARCHIVE_CRON: "30 3 * * *" # standard 5-field cron; "off" disables the job
+```
+
+The crontab is written at container start by `docker/setup-cron.sh`, and the job's output lands in
+`/var/log/archive-cron.log` inside the container:
+
+```bash
+docker exec -it notepad tail -n 20 /var/log/archive-cron.log
+docker exec -it notepad ls -lh backend/public/backups/
+```
+
 ## Troubleshooting
 
 > ERROR in [prerender-spa-plugin] Unable to prerender all routes!  

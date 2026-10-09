@@ -33,12 +33,16 @@ WORKDIR /app
 COPY --from=vue-build /app/frontend ./frontend
 COPY --from=builder /app/backend ./backend
 
-RUN apk --update add tar
+RUN apk --update add tar dcron tzdata
 
 COPY ./backend ./backend
 RUN cd backend && npm run build
 
+# 容器内定时归档（每天执行 backend/bin/archive.sh，时间可用 ARCHIVE_CRON 环境变量调整）
+COPY ./docker/setup-cron.sh ./docker/setup-cron.sh
+RUN chmod +x ./docker/setup-cron.sh
+
 EXPOSE 3000
 
 #CMD ["sleep", "1d"]
-CMD /bin/sh -c "cd frontend && npm run copy:backend && cd ../backend && npm run start"
+CMD /bin/sh -c "sh /app/docker/setup-cron.sh && cd frontend && npm run copy:backend && cd ../backend && npm run start"

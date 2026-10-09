@@ -12,6 +12,11 @@ services:
       SITE_DESCRIPTION: ${SITE_DESCRIPTION:-}
       SITE_KEYWORDS: ${SITE_KEYWORDS:-}
       SITE_AUTHOR: ${SITE_AUTHOR:-}
+      # ── 容器内定时归档（backend/bin/archive.sh）────────────────────────────
+      # 容器时区：cron 的小时数按这个时区计算（默认 UTC 会导致时间不对）
+      TZ: ${TZ:-Asia/Shanghai}
+      # 归档时间：标准 5 段 cron 表达式；"off" 可关闭。默认每天 03:30
+      ARCHIVE_CRON: "${ARCHIVE_CRON:-30 3 * * *}"
 #    build:
 #      context: "."
 #      target: "runner"
