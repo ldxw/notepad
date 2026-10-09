@@ -70,9 +70,46 @@ export class Server {
         // /backups/ 的目录列表（express.static 不生成目录索引）—— 必须在 static 之前注册
         this.enableBackupsIndex(parentPublic);
 
-        this.app.use(express.static(parentPublic, {
+        const staticMiddleware = express.static(parentPublic, {
             etag: true
-        }));
+        });
+
+        // BACKUPS_DOWNLOAD=off 时，/backups/ 下的文件一律不发（列表页本身除外）。
+        // 这里在静态中间件外面包一层，而不是只拦 /backups/:file —— 多写斜杠 //、
+        // URL 编码（%2F、%2e）、子目录、大写 /BACKUPS 这些写法也一并挡住，
+        // 也就是「复制文件名拼地址直接下」这条路走不通。
+        this.app.use((req: Request, res: Response, next: NextFunction) => {
+
+            if (Server.backupsDownloadEnabled()) {
+                return staticMiddleware(req, res, next);
+            }
+
+            let path = String(req.originalUrl || "").split("?")[0];
+
+            try {
+                path = decodeURIComponent(path);
+            } catch (ex) {
+                // 非法百分号编码：保持原样判断，同样会被当成不允许的路径
+            }
+
+            // 压掉重复斜杠、"/./"，并统一小写（Windows 风格的大小写绕过也算）
+            path = path.replace(/\/{2,}/g, "/").replace(/\/\.\//g, "/").toLowerCase();
+
+            // 只有列表页本身放行（它已由上面的路由渲染成清单）
+            if (path === "/backups" || path === "/backups/") {
+                return next();
+            }
+
+            if (path.indexOf("/backups") === 0) {
+                return res.status(403)
+                    .set('Content-Type', 'text/plain; charset=utf-8')
+                    .send(Server.prefersChinese(req)
+                        ? "本实例已关闭备份下载（BACKUPS_DOWNLOAD=off）。"
+                        : "Backup downloads are disabled on this instance (BACKUPS_DOWNLOAD=off).");
+            }
+
+            return staticMiddleware(req, res, next);
+        });
     }
 
     /**
@@ -118,20 +155,6 @@ export class Server {
         const backupsDir = path.join(publicDir, 'backups');
 
         const canDownload = Server.backupsDownloadEnabled();
-
-        // 关闭下载时先在静态中间件之前拦一道：列表页照旧，但直接拼 URL 拿不到文件
-        this.app.get('/backups/:file', (req: Request, res: Response, next: NextFunction) => {
-
-            if (Server.backupsDownloadEnabled()) {
-                return next();
-            }
-
-            res.status(403)
-                .set('Content-Type', 'text/plain; charset=utf-8')
-                .send(Server.prefersChinese(req)
-                    ? "本实例已关闭备份下载（BACKUPS_DOWNLOAD=off）。"
-                    : "Backup downloads are disabled on this instance (BACKUPS_DOWNLOAD=off).");
-        });
 
         this.app.get(['/backups', '/backups/'], (req: Request, res: Response) => {
 
