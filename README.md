@@ -1,5 +1,7 @@
 # Notepad
 
+**English** | [简体中文](README.zh.md)
+
 ![GitHub last commit](https://img.shields.io/github/last-commit/athlon1600/notepad)
 ![Docker Pulls](https://img.shields.io/docker/pulls/athlon1600/notepad)
 ![GitHub](https://img.shields.io/github/license/athlon1600/notepad)
