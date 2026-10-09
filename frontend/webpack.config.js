@@ -2,6 +2,10 @@ const {VueLoaderPlugin} = require("vue-loader");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const PrerenderSPAPlugin = require('prerender-spa-plugin-next')
 
+// 页面元信息（description / keywords / author / title）集中在 site.config.js，
+// 下面用 templateParameters 注入 public/index.html —— 改一处即可，不用动 HTML。
+const site = require("./site.config");
+
 const path = require("path");
 
 const isProd = (process.env.NODE_ENV === 'production');
@@ -52,11 +56,12 @@ const webpackConfig = {
     plugins: [
         new VueLoaderPlugin(),
         new HtmlWebpackPlugin({
-            title: "Notepad.mx",
+            title: site.title,
             template: "public/index.html",
             inject: true,
             minify: false,
-            hash: true
+            hash: true,
+            templateParameters: {site}
         })
     ],
     devServer: {
