@@ -101,11 +101,22 @@ export class Server {
             }
 
             if (path.indexOf("/backups") === 0) {
+
+                const zh = Server.prefersChinese(req);
+
+                const body = `
+  <h1>403</h1>
+  <p>${zh
+      ? "本实例已关闭归档下载（<code>BACKUPS_DOWNLOAD=off</code>）。"
+      : "Backup downloads are disabled on this instance (<code>BACKUPS_DOWNLOAD=off</code>)."}</p>
+  <p class="muted">${zh
+      ? `文件清单仍然可以在 <a href="/backups/">/backups/</a> 查看。`
+      : `The listing is still available at <a href="/backups/">/backups/</a>.`}</p>
+`;
+
                 return res.status(403)
-                    .set('Content-Type', 'text/plain; charset=utf-8')
-                    .send(Server.prefersChinese(req)
-                        ? "本实例已关闭备份下载（BACKUPS_DOWNLOAD=off）。"
-                        : "Backup downloads are disabled on this instance (BACKUPS_DOWNLOAD=off).");
+                    .set('Content-Type', 'text/html; charset=utf-8')
+                    .send(Server.pageShell(zh, zh ? "已关闭下载" : "Downloads disabled", body));
             }
 
             return staticMiddleware(req, res, next);
@@ -142,11 +153,189 @@ export class Server {
     }
 
     /**
+     * 页头里的站点名，和首页同一套规则：_ZH / _EN 两套值，退回不带后缀的，
+     * 都没有就用默认值。返回值已做 HTML 转义。
+     */
+    protected static siteNameFor(zh: boolean): string {
+
+        const keys = zh
+            ? ["SITE_NAME_ZH", "SITE_NAME", "SITE_NAME_EN"]
+            : ["SITE_NAME_EN", "SITE_NAME", "SITE_NAME_ZH"];
+
+        for (const key of keys) {
+
+            const value = (process.env[key] || "").trim();
+
+            if (value) {
+                return Server.escapeHtml(value);
+            }
+        }
+
+        return "notepad.mx";
+    }
+
+    /**
+     * 页面样式，刻意与首页保持一致：
+     *   'Trebuchet MS' 字体、cornsilk 页头 + 深灰分隔线、#f42f42 品牌红（下划线、悬停去掉）、
+     *   #0000EE 下划线链接（悬停变红）、#aab7b8 边框、#a3a1a1 次要文字、#2c3e50 正文。
+     * 首页没有深色模式，这里同样不做。
+     */
+    protected static pageCss(): string {
+
+        return `
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0 0 3rem;
+    background: #ffffff;
+    color: #2c3e50;
+    font-family: 'Trebuchet MS', sans-serif;
+  }
+  .site-header {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: cornsilk;
+    border-bottom: 1px solid darkgrey;
+  }
+  .site-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+  }
+  .site-header .brand {
+    font-family: "Arial Rounded MT Bold", serif;
+    color: #f42f42;
+    text-decoration: underline;
+  }
+  .site-header .brand:hover {
+    text-decoration: none;
+  }
+  .page-icon { margin-right: 0.25rem; }
+  a, a:visited, a:active {
+    color: #0000EE;
+    text-decoration: underline;
+  }
+  a:hover { color: red; }
+  .wrap { max-width: 44rem; margin: 0 auto; padding: 2rem 1rem 0; }
+  h1 { font-size: 2rem; margin: 0 0 1rem; }
+  p { margin: 0 0 1rem; }
+  .muted { color: #a3a1a1; }
+  .summary { color: #a3a1a1; font-size: 0.9rem; margin: 0; }
+  .notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin: 1.25rem 0;
+    padding: 0.75rem 1rem;
+    background: cornsilk;
+    border: 1px solid #aab7b8;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+  .notice svg { flex: none; margin-top: 0.1rem; color: #a3a1a1; }
+  .list { display: grid; gap: 0.5rem; margin-top: 1.5rem; }
+  .card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #ffffff;
+    border: 1px solid #aab7b8;
+    border-radius: 6px;
+    text-decoration: none;
+    color: inherit;
+  }
+  .card:hover { border-color: #f42f42; }
+  .card:hover .dl { color: red; }
+  .card.static:hover { border-color: #aab7b8; }
+  .card:focus-visible { outline: 2px solid #0000EE; outline-offset: 2px; }
+  .file-icon { color: #a3a1a1; flex: none; }
+  .meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  .name { font-weight: 700; word-break: break-all; }
+  .sub { color: #a3a1a1; font-size: 0.85rem; }
+  .dl {
+    color: #0000EE;
+    text-decoration: underline;
+    white-space: nowrap;
+    font-size: 0.9rem;
+  }
+  .dl.off { color: #a3a1a1; text-decoration: none; }
+  .badge {
+    margin-left: 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #f42f42;
+    border: 1px solid currentColor;
+    padding: 0.05rem 0.4rem;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .empty {
+    margin-top: 1.5rem;
+    padding: 1.5rem 1rem;
+    text-align: center;
+    background: #ffffff;
+    border: 1px dashed #aab7b8;
+    border-radius: 6px;
+  }
+  .empty p { margin: 0.5rem 0 0; }
+  pre {
+    margin: 0.75rem auto 0;
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    background: #f6f6f6;
+    border: 1px solid #aab7b8;
+    border-radius: 4px;
+    overflow-x: auto;
+    font-size: 0.8rem;
+    font-family: monospace, courier;
+  }
+  code {
+    background: #f6f6f6;
+    padding: 0.05rem 0.3rem;
+    border-radius: 3px;
+    font-family: monospace, courier;
+    font-size: 0.9em;
+  }
+  footer { margin-top: 2.5rem; color: #a3a1a1; font-size: 0.8rem; line-height: 1.7; }
+  footer code { background: transparent; padding: 0; }
+  @media (max-width: 768px) {
+    .page-icon { display: none; }
+  }
+`;
+    }
+
+    /** 套上站点页头，拼出完整 HTML（/backups/ 列表页与 403 页共用） */
+    protected static pageShell(zh: boolean, title: string, body: string): string {
+
+        return `<!DOCTYPE html>
+<html lang="${zh ? "zh-CN" : "en"}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>${Server.escapeHtml(title)}</title>
+<style>
+${Server.pageCss()}</style>
+</head>
+<body>
+<div class="site-header">
+  <h1><span class="page-icon">📃</span><a class="brand" href="/">${Server.siteNameFor(zh)}</a></h1>
+</div>
+<div class="wrap">
+${body}
+</div>
+</body>
+</html>`;
+    }
+
+    /**
      * 列出 public/backups 里的归档文件（就是 archive.sh / 容器内定时任务产出的那些）。
      * 和上游 notepad.mx/backups/ 一样是公开的 —— 这就是「所有笔记都可导出」的那条路子；
      * 想关掉下载就把 BACKUPS_DOWNLOAD 设成 off。
      *
-     * 页面是服务端渲染的纯 HTML + 内联 CSS（零依赖）：深/浅色随系统、卡片式、进场动效，
+     * 服务端渲染的纯 HTML + 内联 CSS（零依赖），样式与首页一致，
      * 文案按 Accept-Language 在中/英之间切换。
      */
     protected enableBackupsIndex(publicDir: string) {
@@ -174,8 +363,8 @@ export class Server {
 
             const totalSize = files.reduce((sum: number, f: any) => sum + f.size, 0);
 
-            // 用内联 SVG 而不是 emoji：不依赖系统 emoji 字体，任何环境都长一样
-            const boxIcon = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);flex:none" aria-hidden="true"><path d="M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/><rect x="2" y="3" width="20" height="5" rx="1.5"/><path d="M10 12h4"/></svg>`;
+            // 内联 SVG 而不是 emoji：不依赖系统 emoji 字体，任何环境都长一样
+            const boxIcon = `<svg class="file-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/><rect x="2" y="3" width="20" height="5" rx="1.5"/><path d="M10 12h4"/></svg>`;
 
             const cards = files.map((f: any, i: number) => {
 
@@ -190,20 +379,20 @@ export class Server {
   </span>`;
 
                 if (!canDownload) {
-                    return `<div class="card static" style="--i:${i}">
+                    return `<div class="card static">
 ${inner}
   <span class="dl off">${zh ? "已关闭下载" : "downloads off"}</span>
 </div>`;
                 }
 
-                return `<a class="card" href="/backups/${encodeURIComponent(f.name)}" download style="--i:${i}">
+                return `<a class="card" href="/backups/${encodeURIComponent(f.name)}" download>
 ${inner}
   <span class="dl">${zh ? "下载" : "download"} ↓</span>
 </a>`;
             }).join("\n");
 
             const empty = `<div class="empty">
-  <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--muted)" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h3.4l2 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+  <svg class="file-icon" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h3.4l2 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
   <p>${zh ? "还没有备份文件。" : "No archives yet."}</p>
   <p class="muted">${zh
       ? "容器内的定时任务（<code>ARCHIVE_CRON</code>，默认每天 03:30）会自动生成，也可以手动执行："
@@ -219,127 +408,13 @@ ${inner}
       : "Downloads are disabled by the administrator (<code>BACKUPS_DOWNLOAD=off</code>) — this page only lists the archives."}</span>
 </div>`;
 
-            res.set('Content-Type', 'text/html; charset=utf-8');
-            res.send(`<!DOCTYPE html>
-<html lang="${zh ? "zh-CN" : "en"}">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="robots" content="noindex">
-<title>${zh ? "备份文件" : "Backups"}</title>
-<style>
-  :root {
-    --bg: #f6f7f9;
-    --card: #ffffff;
-    --text: #16181d;
-    --muted: #6b7280;
-    --border: #e6e8ec;
-    --accent: #3b6ef6;
-    --shadow: 0 1px 2px rgba(16, 18, 27, .04), 0 8px 24px rgba(16, 18, 27, .06);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0e1014;
-      --card: #171a21;
-      --text: #e8eaf0;
-      --muted: #9aa1ad;
-      --border: #262b35;
-      --accent: #7aa2ff;
-      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 10px 30px rgba(0, 0, 0, .35);
-    }
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    padding: 3rem 1.25rem 4rem;
-    background: var(--bg);
-    color: var(--text);
-    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-  .wrap { max-width: 44rem; margin: 0 auto; }
-  header { animation: rise .45s cubic-bezier(.2,.7,.3,1) both; }
-  .top { display: flex; align-items: baseline; gap: .75rem; flex-wrap: wrap; }
-  h1 { font-size: 1.5rem; margin: 0; letter-spacing: -.02em; }
-  .summary { color: var(--muted); font-size: .875rem; margin: .4rem 0 0; }
-  .back { display: inline-block; margin-bottom: 1.25rem; color: var(--muted); text-decoration: none; font-size: .875rem; }
-  .back:hover { color: var(--accent); }
-  .notice {
-    display: flex; align-items: flex-start; gap: .6rem;
-    margin-top: 1.25rem; padding: .8rem 1rem;
-    background: var(--card); border: 1px dashed var(--border); border-radius: 12px;
-    color: var(--muted); font-size: .85rem;
-    animation: rise .45s cubic-bezier(.2,.7,.3,1) both;
-  }
-  .notice svg { color: var(--muted); flex: none; margin-top: .1rem; }
-  .list { display: grid; gap: .6rem; margin-top: 1.75rem; }
-  .card {
-    display: flex; align-items: center; gap: .9rem;
-    padding: .9rem 1rem;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    text-decoration: none; color: inherit;
-    box-shadow: var(--shadow);
-    transition: transform .18s cubic-bezier(.2,.7,.3,1), border-color .18s, box-shadow .18s;
-    animation: rise .5s cubic-bezier(.2,.7,.3,1) both;
-    animation-delay: calc(var(--i, 0) * 45ms + 80ms);
-  }
-  .card:hover { transform: translateY(-2px); border-color: var(--accent); }
-  .card:active { transform: translateY(0); }
-  .card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  .card.static { cursor: default; }
-  .card.static:hover { transform: none; border-color: var(--border); }
-  .icon { font-size: 1.35rem; line-height: 1; }
-  .meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-  .name { font-weight: 600; word-break: break-all; display: flex; align-items: center; gap: .5rem; }
-  .badge {
-    font-size: .68rem; font-weight: 600; letter-spacing: .02em;
-    color: var(--accent); border: 1px solid currentColor;
-    padding: .05rem .4rem; border-radius: 999px; white-space: nowrap;
-  }
-  .sub { color: var(--muted); font-size: .82rem; margin-top: .1rem; }
-  .dl {
-    color: var(--accent); font-size: .85rem; font-weight: 600;
-    white-space: nowrap; opacity: .85; transition: opacity .18s, transform .18s;
-  }
-  .dl.off { color: var(--muted); font-weight: 500; opacity: .9; }
-  .card:hover .dl { opacity: 1; transform: translateX(2px); }
-  .card.static:hover .dl { transform: none; }
-  .empty {
-    margin-top: 2rem; padding: 2rem 1.25rem; text-align: center;
-    background: var(--card); border: 1px dashed var(--border); border-radius: 14px;
-    animation: rise .5s cubic-bezier(.2,.7,.3,1) both;
-  }
-  .empty-icon { font-size: 1.75rem; }
-  .empty p { margin: .5rem 0 0; }
-  .muted { color: var(--muted); font-size: .875rem; }
-  pre {
-    margin: 1rem auto 0; padding: .6rem .8rem; text-align: left;
-    background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
-    overflow-x: auto; font-size: .8rem;
-  }
-  code { font-size: .85em; background: var(--bg); padding: .1rem .3rem; border-radius: 5px; }
-  footer { margin-top: 2.5rem; color: var(--muted); font-size: .78rem; line-height: 1.7; }
-  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation: none !important; transition: none !important; }
-  }
-</style>
-</head>
-<body>
-<div class="wrap">
-  <a class="back" href="/">← ${zh ? "回到记事本" : "Back to notepad"}</a>
-  <header>
-    <div class="top">
-      <h1><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);vertical-align:-4px;margin-right:.35rem" aria-hidden="true"><path d="M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/><rect x="2" y="3" width="20" height="5" rx="1.5"/><path d="M10 12h4"/></svg>${zh ? "备份文件" : "Backups"}</h1>
-    </div>
-    <p class="summary">${files.length
-        ? (zh
-            ? `共 ${files.length} 个归档 · 合计 ${Server.formatBytes(totalSize)}`
-            : `${files.length} archive${files.length > 1 ? "s" : ""} · ${Server.formatBytes(totalSize)} total`)
-        : (zh ? "本实例的加密笔记归档" : "Encrypted note archives of this instance")}</p>
-  </header>
+            const body = `
+  <h1>${zh ? "备份文件" : "Backups"}</h1>
+  <p class="summary">${files.length
+      ? (zh
+          ? `共 ${files.length} 个归档 · 合计 ${Server.formatBytes(totalSize)}`
+          : `${files.length} archive${files.length > 1 ? "s" : ""} · ${Server.formatBytes(totalSize)} total`)
+      : (zh ? "本实例的加密笔记归档" : "Encrypted note archives of this instance")}</p>
 
   ${notice}
 
@@ -359,9 +434,10 @@ ${inner}
          unpacked into <code>backend/storage</code> to move data to another host or salt.<br>
          Times are the container's local time${process.env.TZ ? ` (TZ=${Server.escapeHtml(process.env.TZ)})` : ""}.`}
   </footer>
-</div>
-</body>
-</html>`);
+`;
+
+            res.set('Content-Type', 'text/html; charset=utf-8');
+            res.send(Server.pageShell(zh, zh ? "备份文件" : "Backups", body));
         });
     }
 
