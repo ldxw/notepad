@@ -309,33 +309,27 @@ jobs:
             done
             echo "多架构摘要：\`${DIGEST:-见构建日志}\`"
             echo
-            echo "## 附带的镜像包"
+            echo "## 附带的镜像包（恢复命令）"
             echo
-            echo "打包好的镜像（没有 registry 权限或离线时可直接导入），已随本 Release 附带："
+            echo "打包好的镜像已随本 Release 附带，没网络 / 没有 registry 权限时也能恢复："
             echo
             echo '```bash'
-            echo "docker load -i notepad-${TAG}-linux-amd64.tar"
-            echo "docker load -i notepad-${TAG}-linux-arm64.tar"
+            echo "# 恢复打包的镜像（按服务器架构选一个）"
+            echo "docker load -i notepad-${TAG}-linux-amd64.tar    # x86_64"
+            echo "docker load -i notepad-${TAG}-linux-arm64.tar    # ARM64"
+            echo ""
+            echo "# 导入后即为 ${FIRST_IMG}:${TAG}，可直接运行"
+            echo "docker run -d --name notepad -p 3000:3000 -e TZ=Asia/Shanghai ${FIRST_IMG}:${TAG}"
             echo '```'
             echo
             if [ -f "$PKG/SHA256SUMS" ]; then
+              echo "文件校验："
+              echo
               echo '```'
               cat "$PKG/SHA256SUMS"
               echo '```'
               echo
             fi
-            echo "## 数据备份 / 恢复"
-            echo
-            echo "容器内已按 \`ARCHIVE_CRON\`（默认每天 03:30）自动归档，也可以手动执行："
-            echo
-            echo '```bash'
-            echo "# 备份：把 backend/storage 打包到 backend/public/backups/"
-            echo 'docker exec -it notepad sh -c "sh backend/bin/archive.sh"'
-            echo ""
-            echo "# 恢复 / 导入：拉取最新备份并解包回 backend/storage"
-            echo 'docker exec -it notepad sh -c "sh backend/bin/sync.sh"'
-            echo '```'
-            echo
             echo "## 更新说明"
             echo
             cat "$CHANGELOG"
