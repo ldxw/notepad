@@ -136,6 +136,35 @@ Missing keys fall back to English and then to the key itself, so a partial trans
 
 That is all — the switcher picks it up automatically.
 
+## :label: Page metadata (runtime variables)
+
+`<title>`, `<meta name="description">`, `<meta name="keywords">` and `<meta name="author">` get their
+defaults baked into the built `index.html` from `frontend/site.config.js` (build time). They can then be
+overridden **at container start** — no rebuild needed — with environment variables:
+
+```bash
+docker run -d -p 3000:3000 \
+  -e SITE_TITLE="My Notepad" \
+  -e SITE_DESCRIPTION="Notes, stored securely online" \
+  -e SITE_KEYWORDS="notepad,encrypted notes" \
+  -e SITE_AUTHOR="me" \
+  ldxw/notepad
+```
+
+Or via `docker-compose.yml` / a `.env` file next to it:
+
+```yaml
+    environment:
+      SITE_TITLE: ${SITE_TITLE:-}
+      SITE_DESCRIPTION: ${SITE_DESCRIPTION:-}
+      SITE_KEYWORDS: ${SITE_KEYWORDS:-}
+      SITE_AUTHOR: ${SITE_AUTHOR:-}
+```
+
+`backend/src/SiteMeta.ts` rewrites the served `index.html` once at boot (values are escaped), so the
+overrides are present in the HTML itself — search engines see them too. Any variable left unset or
+empty keeps the build-time default, and the boot log lists what was overridden.
+
 ## Troubleshooting
 
 > ERROR in [prerender-spa-plugin] Unable to prerender all routes!  

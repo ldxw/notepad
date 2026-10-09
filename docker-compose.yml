@@ -4,6 +4,14 @@ services:
     image: athlon1600/notepad:latest
     environment:
       NODE_ENV: production
+      # ── 运行时页面元信息（留空 = 用构建时 site.config.js 里的默认值）──────────
+      # 这些值在容器启动时注入到 index.html，改完重启容器即可生效，无需重新构建镜像：
+      #   SITE_TITLE="我的记事本" SITE_DESCRIPTION="..." docker compose up -d
+      # 也可以写在同目录的 .env 文件里。
+      SITE_TITLE: ${SITE_TITLE:-}
+      SITE_DESCRIPTION: ${SITE_DESCRIPTION:-}
+      SITE_KEYWORDS: ${SITE_KEYWORDS:-}
+      SITE_AUTHOR: ${SITE_AUTHOR:-}
 #    build:
 #      context: "."
 #      target: "runner"

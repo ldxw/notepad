@@ -1,6 +1,8 @@
 import {Application, NextFunction, Request, Response, Router} from "express";
 import path from "path";
 
+import {SiteMeta} from "./SiteMeta";
+
 const express = require('express');
 
 export class Server {
@@ -46,6 +48,24 @@ export class Server {
     protected enableStatic() {
 
         const parentPublic = path.join(__dirname, '../public');
+
+        // 运行时的页面元信息：容器启动时用 SITE_* 环境变量覆盖 index.html 里构建时的默认值。
+        // 必须在 express.static 之前注册，否则会被静态中间件先接管。
+        const indexHtml = SiteMeta.loadIndexHtml(parentPublic);
+
+        if (indexHtml !== null) {
+
+            const overrides = SiteMeta.describeOverrides();
+
+            if (overrides.length) {
+                console.log(`[meta] page metadata overridden by env: ${overrides.join(", ")}`);
+            }
+
+            this.app.get(['/', '/index.html'], (req: Request, res: Response) => {
+                res.set('Content-Type', 'text/html; charset=utf-8');
+                res.send(indexHtml);
+            });
+        }
 
         this.app.use(express.static(parentPublic, {
             etag: true
