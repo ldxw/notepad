@@ -238,6 +238,10 @@ docker exec -it notepad ls -lh backend/public/backups/
 straight from there. Only encrypted blobs live in that directory, so exposing it is safe; the
 homepage's download link points at it too.
 
+If the directory does not exist yet (a `backend/public` bind mount that started out empty, for
+instance), the archive job creates it itself — `archive.sh` no longer exits with
+"public directory … not found".
+
 ## Troubleshooting
 
 ### Prerendering

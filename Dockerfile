@@ -56,6 +56,18 @@ RUN apk --update add tar dcron tzdata
 COPY ./backend ./backend
 RUN cd backend && npm run build
 
+# 冒烟测试：确认 archive.sh 在镜像自带的 shell（Alpine 的 busybox ash）下能跑通。
+# 它经常以 `sh backend/bin/archive.sh` 的方式被调用（docker exec 或容器内 cron），
+# 之前遇到 public/backups 目录不存在就直接报错退出 —— 构建时跑一遍，不兼容当场失败。
+RUN set -eux; \
+    rm -rf /tmp/smoke; \
+    mkdir -p /tmp/smoke/backend/bin /tmp/smoke/backend/storage; \
+    cp /app/backend/bin/archive.sh /tmp/smoke/backend/bin/; \
+    echo "smoke-test-note" > /tmp/smoke/backend/storage/note.txt; \
+    sh /tmp/smoke/backend/bin/archive.sh; \
+    tar -tzf /tmp/smoke/backend/public/backups/archive.tar.gz | grep -q "storage/note.txt"; \
+    rm -rf /tmp/smoke
+
 # 容器内定时归档（每天执行 backend/bin/archive.sh，时间可用 ARCHIVE_CRON 环境变量调整）
 COPY ./docker/setup-cron.sh ./docker/setup-cron.sh
 RUN chmod +x ./docker/setup-cron.sh

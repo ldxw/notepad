@@ -229,6 +229,9 @@ docker exec -it notepad ls -lh backend/public/backups/
 就能看到列表（文件名、大小、修改时间）并直接下载 —— 和上游 `notepad.mx/backups/` 一个思路。
 目录里只有加密后的密文，公开暴露是安全的；首页那段说明里的下载链接也指向这里。
 
+如果这个目录还不存在（比如 `backend/public` 是 docker 刚建出来的空挂载目录），归档任务会自己把它建出来 ——
+`archive.sh` 不会再像原来那样报 "public directory … not found" 然后退出。
+
 ## 排错
 
 ### 预渲染
