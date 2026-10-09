@@ -28,6 +28,22 @@ RUN apt-get -o Acquire::Retries=3 update && \
 
 COPY --from=builder /app/frontend ./frontend
 COPY ./frontend ./frontend
+
+# prerender 需要 puppeteer 自带的 Chromium，而它是靠 npm install 的 install 脚本下载的。
+# 较新的 npm 会跳过未授权的生命周期脚本（npm 11: "install-scripts ... not yet covered by
+# allowScripts: puppeteer@1.20.0 (install: node install.js)"），一旦被跳过，构建就会报
+# "Failed to launch chrome! ... ENOENT"。所以这里显式下载一次（带重试），
+# 下不下来立刻失败，错误信息清楚，不会拖到 webpack 阶段才暴露。
+RUN cd frontend \
+    && for i in 1 2 3; do \
+         if [ -f node_modules/puppeteer/.local-chromium/linux-*/chrome-linux/chrome ]; then \
+           echo "Chromium 已存在，跳过下载"; break; \
+         fi; \
+         echo "第 $i 次下载 Chromium..."; \
+         node node_modules/puppeteer/install.js && break || sleep 10; \
+       done \
+    && ls -l node_modules/puppeteer/.local-chromium/linux-*/chrome-linux/chrome
+
 RUN cd frontend && npm run build
 
 
