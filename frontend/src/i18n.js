@@ -16,21 +16,6 @@ export const messages = {
         "lang.label": "Language",
         "lang.switch": "Switch language",
 
-        "theme.label": "Theme",
-        "theme.pick": "Choose a theme",
-        "theme.auto": "Auto",
-        "theme.light": "Light",
-        "theme.dark": "Dark",
-
-        "skin.classic": "Classic",
-        "skin.paper": "Paper",
-        "skin.ocean": "Ocean",
-        "skin.forest": "Forest",
-        "skin.grape": "Grape",
-        "skin.sunset": "Sunset",
-        "skin.mono": "Mono",
-        "skin.neon": "Neon",
-
         "home.loginTitle": "🔑 Login with a unique passphrase",
         "home.phrasePlaceholder": "e.g: correct horse battery staple",
         "home.phraseHint": "Can be as short as you want, but in order to make it harder for others to guess (or brute-force), make it at least 4 words.",
@@ -98,21 +83,6 @@ export const messages = {
         "lang.label": "语言",
         "lang.switch": "切换语言",
 
-        "theme.label": "主题",
-        "theme.pick": "选择主题",
-        "theme.auto": "跟随系统",
-        "theme.light": "浅色",
-        "theme.dark": "深色",
-
-        "skin.classic": "经典",
-        "skin.paper": "纸张",
-        "skin.ocean": "海洋",
-        "skin.forest": "森林",
-        "skin.grape": "葡萄",
-        "skin.sunset": "落日",
-        "skin.mono": "极简",
-        "skin.neon": "霓虹",
-
         "home.loginTitle": "🔑 用一句独一无二的口令登录",
         "home.phrasePlaceholder": "例如：正确的马 电池 订书钉",
         "home.phraseHint": "随便多短都可以，但为了让别人更难猜到（或被暴力破解），建议至少用 4 个词。",
@@ -166,8 +136,8 @@ export const availableLocales = [
     {code: "zh", label: "中文"}
 ];
 
-/** 读取后端注入的 <meta name="..."> 的 content；拿不到返回空串（config.js / theme.js 也用它） */
-export function injectedMeta(name) {
+/** 读取后端注入的 <meta name="..."> 的 content；拿不到返回空串 */
+function injectedMeta(name) {
 
     if (typeof document === "undefined" || !document.querySelector) {
         return "";

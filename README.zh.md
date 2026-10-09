@@ -196,21 +196,6 @@ SITE_TITLE_ZH="在线记事本"    SITE_TITLE_EN="Online Notepad - store your no
 不会再出现「英文页面顶着中文标题」。不带后缀的 `SITE_TITLE=…` 依然有效，作为所有语言的通用兜底。
 静态 HTML（爬虫不执行 JS 时看到的那份）用 `SITE_LANG` 指定语言的一套；`SITE_LANG` 没设则用 `_EN` 那套。
 
-### 主题
-
-两件互相独立的事，都在页头操作，选择都记在 `localStorage`：
-
-* **明暗（模式）** —— 跟随系统 / 浅色 / 深色。首次访问的默认值用 `SITE_THEME`
-  （`auto` / `light` / `dark`，不设就是 `auto`）。
-* **皮肤（整站配色）** —— 点页头的调色板按钮挑：`classic` 经典（默认）、`paper` 纸张（衬线）、
-  `ocean` 海洋、`forest` 森林、`grape` 葡萄、`sunset` 落日、`mono` 极简（等宽）、`neon` 霓虹。
-  默认皮肤用 `SITE_SKIN` 指定。
-
-每个皮肤都配了浅色和深色两套色板，所以任意皮肤都能和任意明暗组合。想加自己的主题，
-只需在 `frontend/src/theme.js` 的 `skins` 数组里加一段数据（`--bg`、`--surface`、`--text`、
-`--accent`、`--link`、`--border`、`--muted`，另可选 `--font-body` / `--radius`）；
-`frontend/src/sass/app.scss` 里只留一份「JS 还没跑时」的兜底配色。
-
 ## :alarm_clock: 自动备份（容器内 cron）
 
 镜像每天会自动跑一次归档任务，你不必自己再配 cron：

@@ -204,21 +204,6 @@ metas — no more Chinese text on an English page. A plain `SITE_TITLE=` without
 as the fallback for every language. The static HTML (what a crawler sees without running JS) uses
 the set matching `SITE_LANG`, or the `_EN` set when `SITE_LANG` is unset.
 
-### Themes
-
-Two independent choices, both in the header and both remembered in `localStorage`:
-
-* **Mode** — Auto (follows the OS), Light, Dark. The default for first-time visitors comes from
-  `SITE_THEME` (`auto` / `light` / `dark`; unset means `auto`).
-* **Skin** — the whole colour scheme, picked from the palette button: `classic` (default), `paper`
-  (serif), `ocean`, `forest`, `grape`, `sunset`, `mono` (monospace) and `neon`. The default comes
-  from `SITE_SKIN`.
-
-Every skin ships a light *and* a dark palette, so any skin combines with any mode. Adding your own
-is one entry in the `skins` array in `frontend/src/theme.js` — a palette is just `--bg`, `--surface`,
-`--text`, `--accent`, `--link`, `--border` and `--muted`, plus the optional `--font-body` /
-`--radius`. `frontend/src/sass/app.scss` only keeps the fallback used before the JS runs.
-
 ## :alarm_clock: Automatic backups (in-container cron)
 
 The image runs the archive job once a day, so you do not have to wire up your own cron:

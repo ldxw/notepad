@@ -1,6 +1,7 @@
 
+
 .btn {
-  background-color: #4CAF50;
+  background-color: #4CAF50; /* Green */
   border: none;
   color: white !important;
   padding: 0.5em 1.2em;
@@ -8,7 +9,8 @@
   text-decoration: none;
   display: inline-block;
   font-size: 1em;
-  border-radius: 0.45em;
+  border-radius: 0.3em;
+
   text-transform: uppercase;
 }
 
@@ -25,137 +27,17 @@ textarea {
   width: 100%;
   height: 50vh;
 
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
-  font-size: .95rem;
-  line-height: 1.6;
+  font-family: "Courier New", serif;
 
   padding: 12px 20px;
   box-sizing: border-box;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background-color: var(--surface);
-  color: var(--text);
+  border: 2px solid #ccc;
+  border-radius: 4px;
+  background-color: #f8f8f8;
   resize: both;
 }
 
 input:disabled {
-  background-color: var(--surface-2);
-  opacity: .7;
-}
-
-// ── 主题面板（页头调色板按钮打开）───────────────────────────────────────────
-.theme-wrap {
-  // .seg 默认 overflow:hidden，这里要能弹出面板
-  position: relative;
-  overflow: visible !important;
-}
-
-.theme-panel {
-  position: absolute;
-  top: calc(100% + .5rem);
-  right: 0;
-  z-index: 50;
-  width: min(92vw, 23rem);
-  max-height: min(70vh, 30rem);
-  overflow-y: auto;
-  padding: .85rem;
-  background-color: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
-  animation: rise .16s ease both;
-
-  .theme-panel-title {
-    margin: 0 0 .55rem .15rem;
-    font-size: .72rem;
-    font-weight: 700;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .theme-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(6.4rem, 1fr));
-    gap: .5rem;
-  }
-
-  .theme-card {
-    display: flex;
-    flex-direction: column;
-    gap: .4rem;
-    padding: .4rem;
-    background-color: transparent;
-    border: 1px solid var(--border);
-    border-radius: 11px;
-    color: var(--text);
-    cursor: pointer;
-    text-align: left;
-    transition: border-color .16s ease, transform .16s ease, background-color .16s ease;
-
-    &:hover {
-      border-color: var(--link);
-      background-color: var(--surface-2);
-      transform: translateY(-1px);
-    }
-
-    &.active {
-      border-color: var(--accent);
-      background-color: var(--surface-2);
-
-      .theme-name {
-        font-weight: 700;
-      }
-    }
-  }
-
-  // 每个主题的迷你预览：底色 + 一张「卡片」+ 文字条 + 强调色点
-  .theme-swatch {
-    position: relative;
-    display: block;
-    height: 2.6rem;
-    border-radius: 7px;
-    background-color: var(--sw-bg);
-    box-shadow: inset 0 0 0 1px rgba(127, 127, 127, .28);
-    overflow: hidden;
-
-    i {
-      position: absolute;
-      left: .5rem;
-      right: .5rem;
-      top: .75rem;
-      bottom: -.5rem;
-      background-color: var(--sw-surface);
-      border-radius: 5px 5px 0 0;
-      box-shadow: inset 0 0 0 1px rgba(127, 127, 127, .18);
-
-      &::before {
-        content: "";
-        position: absolute;
-        left: .4rem;
-        top: .38rem;
-        width: 52%;
-        height: .24rem;
-        border-radius: 3px;
-        background-color: var(--sw-text);
-        opacity: .8;
-      }
-
-      &::after {
-        content: "";
-        position: absolute;
-        right: .35rem;
-        bottom: .35rem;
-        width: .5rem;
-        height: .5rem;
-        border-radius: 50%;
-        background-color: var(--sw-accent);
-      }
-    }
-  }
-
-  .theme-name {
-    font-size: .8rem;
-    line-height: 1.2;
-  }
+  background-color: #e9ecef;
+  opacity: 1;
 }
