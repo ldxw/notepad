@@ -192,7 +192,7 @@ docker run -d -p 3000:3000 \
 | 变量 | 取值 | 说明 |
 |---|---|---|
 | `SITE_THEME` | `auto`（默认）/ `light` / `dark` | 明暗模式，`auto` = 跟随访客系统 |
-| `SITE_SKIN` | `classic`（默认）/ `paper` / `ocean` / `forest` / `grape` / `sunset` / `mono` / `neon` | 整套配色；`classic` 是默认的 teal 配色 |
+| `SITE_SKIN` | `classic`（默认）/ `paper` / `ocean` / `forest` / `grape` / `sunset` / `mono` / `neon` / `bento` | 整套配色；`classic` 是默认的 teal 配色，`bento` 还改布局 |
 
 ```bash
 SITE_THEME="dark"
@@ -203,8 +203,13 @@ SITE_SKIN="paper"
 访客在页头选过的记在浏览器里，优先级更高。名字写错只会退回默认主题（后端只校验格式，
 名单在前端），不会渲染出没样式的页面。
 
-配色数据在 `frontend/src/theme.js` 的 `skins` 数组里，想加第 9 套主题就加一条记录
+配色数据在 `frontend/src/theme.js` 的 `skins` 数组里，想加第 10 套主题就加一条记录
 （`id` + 中英标签 + 明暗两套令牌），选择面板、预览色块和 `SITE_SKIN` 会自动认得它。
+
+要写**会改布局**的主题（不只是换色），在 `frontend/src/themes/` 下放一个模块：
+`<id>.css`（结构样式，选择器一律挂在 `html[data-skin="<id>"]` 下）+ `<id>.js`
+（可选行为，导出 `onApply()`），再在 `theme.js` 的 `THEME_HOOKS` 里登记一行。
+`themes/bento.{css,js}` 就是现成的样板。
 
 ### 中英两套值
 

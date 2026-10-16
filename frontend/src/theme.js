@@ -13,6 +13,9 @@
  * 样式表里只保留一套 classic 作为无 JS / 预渲染兜底。
  */
 
+// 会改布局的主题：各自一个模块（自己的 CSS + 可选的行为），在这里登记
+import {onApply as bentoOnApply} from "./themes/bento";
+
 export const DEFAULT_MODE = "auto";
 export const DEFAULT_SKIN = "classic";
 
@@ -185,8 +188,32 @@ export const skins = [
             muted: "#9a9ac4", border: "#24244a", accent: "#00e5ff", link: "#5ce1ff",
             code: "#161628", header: "#0a0a14"
         })
+    },
+
+    {
+        // 会改布局的一套：除了配色，还把首页排成磁贴网格、页头滚动压缩。
+        // 结构样式在 themes/bento.css，行为在 themes/bento.js。
+        id: "bento",
+        labelKey: "skin.bento",
+        light: palette({
+            bg: "#f7f8fa", surface: "#ffffff", surface2: "#eef0f4", text: "#1e2430",
+            muted: "#667085", border: "#e3e6ec", accent: "#4f46e5", link: "#4338ca",
+            code: "#eef0f4", header: "#ffffff",
+            btnBg: "#4f46e5", btnText: "#ffffff", ring: "#4f46e5"
+        }),
+        dark: palette({
+            bg: "#0f1117", surface: "#161923", surface2: "#1d212c", text: "#e8eaf0",
+            muted: "#98a0b3", border: "#272c38", accent: "#818cf8", link: "#a5b4fc",
+            code: "#1d212c", header: "#12151d",
+            btnBg: "#818cf8", btnText: "#0f1117", ring: "#818cf8"
+        })
     }
 ];
+
+/** 主题自带的行为：applyTheme() 每次都会调用当前主题的钩子 */
+const THEME_HOOKS = {
+    bento: bentoOnApply
+};
 
 const CLASSIC = skins[0];
 
@@ -289,6 +316,15 @@ export function applyTheme() {
     const palette = paletteFor(skin, isDark());
 
     Object.keys(palette).forEach((prop) => html.style.setProperty(prop, palette[prop]));
+
+    // 主题自带的行为：会改布局的主题在这里初始化；切走时清掉它留下的标记
+    const hook = THEME_HOOKS[skin];
+
+    if (hook) {
+        hook();
+    } else {
+        html.removeAttribute("data-scrolled");
+    }
 
     // 让原生滚动条 / 表单控件跟着走
     try {

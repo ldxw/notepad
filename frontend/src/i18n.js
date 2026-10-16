@@ -30,6 +30,7 @@ export const messages = {
         "skin.sunset": "Sunset",
         "skin.mono": "Mono",
         "skin.neon": "Neon",
+        "skin.bento": "Bento",
 
         "home.loginTitle": "🔑 Login with a unique passphrase",
         "home.phrasePlaceholder": "e.g: correct horse battery staple",
@@ -112,6 +113,7 @@ export const messages = {
         "skin.sunset": "日落",
         "skin.mono": "黑白",
         "skin.neon": "霓虹",
+        "skin.bento": "磁贴",
 
         "home.loginTitle": "🔑 用一句独一无二的口令登录",
         "home.phrasePlaceholder": "例如：正确的马 电池 订书钉",

@@ -200,7 +200,7 @@ To give first-time visitors a default theme, set two environment variables:
 | Variable | Values | Meaning |
 |---|---|---|
 | `SITE_THEME` | `auto` (default) / `light` / `dark` | brightness; `auto` follows the visitor's system |
-| `SITE_SKIN` | `classic` (default) / `paper` / `ocean` / `forest` / `grape` / `sunset` / `mono` / `neon` | the whole palette; `classic` is the default teal look |
+| `SITE_SKIN` | `classic` (default) / `paper` / `ocean` / `forest` / `grape` / `sunset` / `mono` / `neon` / `bento` | the whole palette; `classic` is the default teal look, `bento` also changes the layout |
 
 ```bash
 SITE_THEME="dark"
@@ -212,9 +212,14 @@ not picked a theme themselves — a visitor's own choice is stored in the browse
 unknown name falls back to the default theme (the backend validates the format only; the list
 lives in the frontend), so a typo never renders an unstyled page.
 
-The palettes are data in the `skins` array of `frontend/src/theme.js`. Adding a ninth theme is one
+The palettes are data in the `skins` array of `frontend/src/theme.js`. Adding a tenth theme is one
 entry there (`id`, a label in every locale, and a light + dark token set) — the picker, the
 preview swatches and `SITE_SKIN` pick it up automatically.
+
+For a theme that also **changes the layout**, drop a module under `frontend/src/themes/`:
+`<id>.css` (structural styles, every selector scoped under `html[data-skin="<id>"]`) plus
+`<id>.js` (optional behaviour, exporting `onApply()`), then register one line in `THEME_HOOKS`
+in `theme.js`. `themes/bento.{css,js}` is the working template.
 
 ### Per-language values
 
