@@ -27,16 +27,12 @@ on:
         description: "强制构建（忽略构建缓存，全部从零重编）"
         type: boolean
         default: false
-      makeRelease:
-        description: "构建成功后创建 Release（发布说明 + 镜像地址 + 打包好的镜像 + SHA256SUMS）"
-        type: boolean
-        default: true
       siteLang:
         description: "预渲染（静态 HTML）用的界面语言：单个 zh / en，或逗号分隔的多个（如 zh,en 表示中英各渲染一份，运行时按访客语言挑）"
         type: string
         default: "zh,en"
 
-# ghcr.io 用内置 GITHUB_TOKEN 推送；创建 Release 需要 contents: write
+# ghcr.io 用内置 GITHUB_TOKEN 推送，需要 packages: write
 permissions:
   contents: write
   packages: write
@@ -64,7 +60,6 @@ jobs:
       INPUT_PUSH_GHCR: ${{ inputs.pushToGhcr }}
       INPUT_PUSH_ALIYUN: ${{ inputs.pushToAliyun }}
       INPUT_FORCE: ${{ inputs.forceBuild }}
-      INPUT_RELEASE: ${{ inputs.makeRelease }}
       # 时间统一按国内时间（+8）。注意：镜像标签的时区是靠 metadata-action 的
       # tz='Asia/Shanghai' 显式指定的（它默认 UTC，不看这里的 TZ）；这里设 TZ
       # 是为了让脚本里非显式的 date 调用也按国内时间。
@@ -74,7 +69,6 @@ jobs:
       - name: 📥 拉取代码
         uses: actions/checkout@v4
         with:
-          # 生成「更新说明」需要完整历史与既有标签
           fetch-depth: 0
           fetch-tags: true
 
@@ -90,7 +84,6 @@ jobs:
           want_ghcr="${INPUT_PUSH_GHCR:-true}"
           want_aliyun="${INPUT_PUSH_ALIYUN:-true}"
           force="${INPUT_FORCE:-false}"
-          want_release="${INPUT_RELEASE:-true}"
 
           images=()
           do_ghcr=false
@@ -137,7 +130,6 @@ jobs:
             echo "do_ghcr=${do_ghcr}"
             echo "do_aliyun=${do_aliyun}"
             echo "force=${force}"
-            echo "release=${want_release}"
           } >> "$GITHUB_OUTPUT"
 
       - name: 🛠️ 配置多架构支持 (QEMU)
@@ -212,196 +204,4 @@ jobs:
             echo '```'
             echo ""
             echo "强制构建：${{ steps.images.outputs.force }}"
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      # 把已发布的镜像从 registry 取回来，导出成 docker load 可直接导入的 tar，
-      # 连同 SHA256SUMS 一起作为 Release 附件 —— 没有 registry 权限 / 离线也能部署。
-      - name: 🗜️ 打包镜像（docker load 可直接导入的 tar）
-        if: steps.images.outputs.release == 'true'
-        run: |
-          set -euo pipefail
-
-          TAG="$(printf '%s\n' "${{ steps.meta.outputs.tags }}" | sed -E 's#^.*:##' | sed -E 's/^theme-//' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{4}$' | head -1 || true)"
-          if [ -z "$TAG" ]; then
-            TAG="$(date -u -d '+8 hours' '+%Y-%m-%d-%H%M')"
-          fi
-
-          # 从本次推送的第一个仓库取（上面的登录步骤已经登录过，crane 会自动读 ~/.docker/config.json）
-          REF="$(printf '%s\n' "${{ steps.images.outputs.list }}" | head -1):theme-${TAG}"
-          echo "打包来源：${REF}"
-
-          PKG=/tmp/pkg
-          mkdir -p "$PKG"
-
-          # crane：导出带 RepoTags 的 tar（docker load 后直接就是 <仓库>:<标签>）
-          curl -sSL -o /tmp/crane.tgz \
-            "https://github.com/google/go-containerregistry/releases/download/v0.22.1/go-containerregistry_Linux_x86_64.tar.gz"
-          tar -xzf /tmp/crane.tgz -C /tmp crane
-          /tmp/crane version
-
-          for arch in amd64 arm64; do
-            out="${PKG}/notepad-${TAG}-linux-${arch}.tar"
-            echo "→ 导出 linux/${arch} ..."
-            /tmp/crane pull --platform "linux/${arch}" "${REF}" "${out}"
-            ls -lh "$out"
-          done
-
-          # 镜像层本身就是 gzip 的，外层再压没有收益；直接给 tar
-          # sha256sum -c SHA256SUMS 可直接校验下载下来的文件
-          (cd "$PKG" && sha256sum ./*.tar > SHA256SUMS)
-          echo "--- SHA256SUMS ---"
-          cat "$PKG/SHA256SUMS"
-
-      - name: 📦 发布 Release（发布说明 + 镜像地址 + 镜像包 + SHA256SUMS）
-        if: steps.images.outputs.release == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-
-          REPO="${{ github.repository }}"
-          SHA="${{ github.sha }}"
-          DIGEST="${{ steps.build.outputs.digest }}"
-          PLATFORMS="${{ env.PLATFORMS }}"
-          LIST="${{ steps.images.outputs.list }}"
-          NOTES=/tmp/notes.md
-          CHANGELOG=/tmp/changelog.md
-          PKG=/tmp/pkg
-
-          # Release 标签用镜像的时间标签（从 theme-<时间> 里取出的那一段）
-          TAG="$(printf '%s\n' "${{ steps.meta.outputs.tags }}" | sed -E 's#^.*:##' | sed -E 's/^theme-//' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{4}$' | head -1 || true)"
-          if [ -z "$TAG" ]; then
-            TAG="$(date -u -d '+8 hours' '+%Y-%m-%d-%H%M')"
-          fi
-
-          # 本次真正推过的仓库（可能只有其中一两个）
-          HUB_IMG="$(printf '%s\n' "$LIST" | grep -E '^docker\.io/' | head -1 || true)"
-          GHCR_IMG="$(printf '%s\n' "$LIST" | grep -E '^ghcr\.io/' | head -1 || true)"
-          ALI_IMG="$(printf '%s\n' "$LIST" | grep -E 'aliyuncs\.com' | head -1 || true)"
-          FIRST_IMG="$(printf '%s\n' "$LIST" | head -1)"
-
-          # 构建时间按国内时间（+8）显示
-          BUILD_TIME="$(date -u -d '+8 hours' '+%Y-%m-%dT%H:%M:%S+08:00')"
-
-          # ---------- 更新说明：与镜像 tag 同名的上一个构建标签至今的提交 ----------
-          : > "$CHANGELOG"
-          PREV_TAG="$(git tag -l --sort=-creatordate | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{4}$' | grep -v "^${TAG}$" | head -1 || true)"
-          if [ -n "$PREV_TAG" ] && git rev-parse -q --verify "$PREV_TAG" >/dev/null 2>&1; then
-            git log --pretty='- %s' "${PREV_TAG}..${SHA}" > "$CHANGELOG" || true
-          fi
-          if [ ! -s "$CHANGELOG" ]; then
-            git log --pretty='- %s' -10 "$SHA" > "$CHANGELOG" || true
-          fi
-          if [ ! -s "$CHANGELOG" ]; then
-            echo "- 本次发布" > "$CHANGELOG"
-          fi
-
-          # ---------- 组装发布说明 ----------
-          {
-            echo "## 发布说明"
-            echo
-            echo "- **构建时间**：${BUILD_TIME}（北京时间 UTC+8）"
-            echo "- **提交**：\`${SHA}\`"
-            echo "- **镜像标签**：\`theme\`、\`theme-${TAG}\`"
-            echo "- **支持架构**：\`${PLATFORMS}\`（多架构 manifest list）"
-            echo "- **文件校验**：请使用本次 Release 附带的 \`SHA256SUMS\` 校验下载下来的镜像包（\`sha256sum -c SHA256SUMS\`）"
-            echo
-            echo "## Docker 镜像"
-            echo
-            for pair in "GHCR:${GHCR_IMG}" "Docker Hub:${HUB_IMG}" "阿里云:${ALI_IMG}"; do
-              label="${pair%%:*}"
-              img="${pair#*:}"
-              if [ -n "$img" ]; then
-                echo "**${label}**"
-                echo
-                echo '```'
-                echo "${img}:theme"
-                echo "${img}:theme-${TAG}"
-                echo '```'
-                echo
-              fi
-            done
-            echo "多架构摘要：\`${DIGEST:-见构建日志}\`"
-            echo
-            echo "## 附带的镜像包（恢复命令）"
-            echo
-            echo "打包好的镜像已随本 Release 附带，没网络 / 没有 registry 权限时也能恢复："
-            echo
-            echo '```bash'
-            echo "# 恢复打包的镜像（按服务器架构选一个）"
-            echo "docker load -i notepad-${TAG}-linux-amd64.tar    # x86_64"
-            echo "docker load -i notepad-${TAG}-linux-arm64.tar    # ARM64"
-            echo ""
-            echo "# 导入后即为 ${FIRST_IMG}:theme-${TAG}，可直接运行"
-            echo "docker run -d --name notepad -p 3000:3000 -e TZ=Asia/Shanghai ${FIRST_IMG}:theme-${TAG}"
-            echo '```'
-            echo
-            if [ -f "$PKG/SHA256SUMS" ]; then
-              echo "文件校验："
-              echo
-              echo '```'
-              cat "$PKG/SHA256SUMS"
-              echo '```'
-              echo
-            fi
-            echo "## 更新说明"
-            echo
-            cat "$CHANGELOG"
-            echo
-            echo "## 快速开始"
-            echo
-            echo '```bash'
-            echo "# 直接用镜像"
-            echo "docker run -d --name notepad -p 3000:3000 -e TZ=Asia/Shanghai ${GHCR_IMG:-${HUB_IMG:-${ALI_IMG}}}:theme"
-            echo ""
-            echo "# 或者用仓库里的 compose"
-            echo "git clone https://github.com/$REPO.git && cd notepad && docker compose up -d"
-            echo '```'
-            echo
-            echo "## 可用环境变量"
-            echo
-            echo "| 变量 | 说明 |"
-            echo "|---|---|"
-            echo '| `SITE_TITLE` / `SITE_DESCRIPTION` / `SITE_KEYWORDS` / `SITE_NAME` | 页面元信息与页头名字；都支持 `_ZH` / `_EN` 后缀（切语言时跟着换），不带后缀的是通用兜底 |'
-            echo '| `SITE_AUTHOR` | `<meta name="author">`（与语言无关） |'
-            echo '| `SITE_LANG` | 默认界面语言：`auto`（默认，跟随浏览器）/ `zh` / `en`；访客自己选过的语言优先 |'
-            echo '| `SITE_SALT` | 口令哈希用的 salt（默认 `notepad.mx`）；换掉后旧 salt 下的笔记在界面上不可见 |'
-            echo '| `SITE_ICON` | 站点图标 URL 或路径；留空用内置的 `favicon.ico` |'
-            echo '| `TZ` | 时区，容器内 cron 按它计算（默认 UTC） |'
-            echo '| `ARCHIVE_CRON` | 每日归档时间，默认 `30 3 * * *`，设 `off` 关闭 |'
-            echo '| `BACKUPS_DOWNLOAD` | 归档下载开关：默认 `on`（/backups/ 公开可下载）；`off` 只列清单、下载直链返回 403 |'
-            echo
-            echo "## 特性"
-            echo
-            echo "- 🔐 笔记在客户端加密后才上传（服务端只有密文）"
-            echo "- 🌐 中英双语 + 头部语言切换（自动识别浏览器语言并用 localStorage 记忆）"
-            echo "- 🔎 首页预渲染成静态 HTML，便于搜索引擎收录"
-            echo "- 💾 容器内每日自动归档到 \`backend/public/backups/\`"
-            echo "- 🧱 多架构镜像：${PLATFORMS}"
-          } > "$NOTES"
-
-          # ---------- 创建 / 更新 Release，并上传镜像包与校验文件 ----------
-          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-            gh release edit "$TAG" --repo "$REPO" --title "镜像 $TAG" --notes-file "$NOTES"
-          else
-            gh release create "$TAG" --repo "$REPO" --title "镜像 $TAG" --target "$SHA" --notes-file "$NOTES" --latest
-          fi
-
-          if ls "$PKG"/*.tar >/dev/null 2>&1; then
-            gh release upload "$TAG" "$PKG"/*.tar "$PKG/SHA256SUMS" --repo "$REPO" --clobber
-          fi
-
-          echo "Release 已就绪：$TAG"
-          ls -lh "$PKG" || true
-
-          {
-            echo ""
-            echo "### 📦 Release"
-            echo ""
-            echo "- https://github.com/$REPO/releases/tag/$TAG"
-            echo ""
-            echo "附件："
-            echo '```'
-            ls -l "$PKG" | tail -n +2
-            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
