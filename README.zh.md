@@ -164,11 +164,11 @@ docker run -d -p 3000:3000 \
 
 ```yaml
     environment:
-      SITE_TITLE: ${SITE_TITLE:-}
-      SITE_DESCRIPTION: ${SITE_DESCRIPTION:-}
-      SITE_KEYWORDS: ${SITE_KEYWORDS:-}
-      SITE_AUTHOR: ${SITE_AUTHOR:-}
-      SITE_LANG: ${SITE_LANG:-}
+      SITE_TITLE: ${SITE_TITLE}
+      SITE_DESCRIPTION: ${SITE_DESCRIPTION}
+      SITE_KEYWORDS: ${SITE_KEYWORDS}
+      SITE_AUTHOR: ${SITE_AUTHOR}
+      SITE_LANG: ${SITE_LANG}
 ```
 
 `SITE_LANG` 用来设**默认界面语言**（`auto` = 跟随浏览器，也是默认值；`zh` / `en` 直接指定）。

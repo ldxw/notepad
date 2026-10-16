@@ -170,11 +170,11 @@ Or via `docker-compose.yml` / a `.env` file next to it:
 
 ```yaml
     environment:
-      SITE_TITLE: ${SITE_TITLE:-}
-      SITE_DESCRIPTION: ${SITE_DESCRIPTION:-}
-      SITE_KEYWORDS: ${SITE_KEYWORDS:-}
-      SITE_AUTHOR: ${SITE_AUTHOR:-}
-      SITE_LANG: ${SITE_LANG:-}
+      SITE_TITLE: ${SITE_TITLE}
+      SITE_DESCRIPTION: ${SITE_DESCRIPTION}
+      SITE_KEYWORDS: ${SITE_KEYWORDS}
+      SITE_AUTHOR: ${SITE_AUTHOR}
+      SITE_LANG: ${SITE_LANG}
 ```
 
 `SITE_LANG` sets the **default UI language** (`auto` = follow the browser, which is the default;
