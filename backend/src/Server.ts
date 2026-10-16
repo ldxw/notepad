@@ -53,7 +53,20 @@ export class Server {
         // 必须在 express.static 之前注册，否则会被静态中间件先接管。
         const indexHtml = SiteMeta.loadIndexHtml(parentPublic);
 
-        if (indexHtml !== null) {
+        // 预渲染时如果为每种语言各渲染了一份（index.zh.html / index.en.html），
+        // 这里按访客的 Accept-Language 挑对应那份 —— 中英访客首屏就是自己的语言，不用等前端切。
+        const indexByLang: {[key: string]: string} = {};
+
+        ["zh", "en"].forEach((one: string) => {
+
+            const html = SiteMeta.loadIndexHtml(parentPublic, process.env, "index." + one + ".html", one);
+
+            if (html !== null) {
+                indexByLang[one] = html;
+            }
+        });
+
+        if (indexHtml !== null || Object.keys(indexByLang).length) {
 
             const overrides = SiteMeta.describeOverrides();
 
@@ -61,9 +74,29 @@ export class Server {
                 console.log(`[meta] page metadata overridden by env: ${overrides.join(", ")}`);
             }
 
+            if (Object.keys(indexByLang).length) {
+                console.log(`[meta] 按语言预渲染的页面: ${Object.keys(indexByLang).join(" / ")}`);
+            }
+
             this.app.get(['/', '/index.html'], (req: Request, res: Response) => {
+
+                // 运行时显式设了 SITE_LANG（zh / en）就用那一套、忽略访客语言；
+                // 没设或写的是 auto 时，才按访客的 Accept-Language 挑预渲染的那份
+                const pinned = SiteMeta.normalizeLang(process.env[SiteMeta.ENV.lang]);
+
+                const lang = pinned || (Server.prefersChinese(req) ? "zh" : "en");
+
+                const html = indexByLang[lang] || indexHtml;
+
+                if (!html) {
+                    res.status(404).send("Not Found");
+                    return;
+                }
+
                 res.set('Content-Type', 'text/html; charset=utf-8');
-                res.send(indexHtml);
+                // 同一个地址会按语言发不同内容，告诉中间的缓存/代理别把语言串了
+                res.set('Vary', 'Accept-Language');
+                res.send(html);
             });
         }
 

@@ -185,8 +185,10 @@ export class SiteMeta {
 
     /**
      * 把 SITE_* 环境变量应用到 HTML 上。未设置的变量不动 —— 保留构建时的默认值。
+     * forcedLang：预渲染出多语言副本（index.zh.html / index.en.html）时，由调用方指明
+     * 这份文件是哪一套语言，它优先于 SITE_LANG 的判断。
      */
-    public static apply(html: string, env: NodeJS.ProcessEnv = process.env): string {
+    public static apply(html: string, env: NodeJS.ProcessEnv = process.env, forcedLang?: string): string {
 
         // SITE_LANG 的三种取值（与 .env.example 里的说明一致）：
         //   zh / en                    → 就用这一套
@@ -198,8 +200,9 @@ export class SiteMeta {
 
         const explicitAuto = /^(auto|browser|detect)$/i.test(rawLang);
 
-        // 静态 HTML 里生效的是哪一套语言值，最后才退回英文
-        const staticLang = configured || (explicitAuto ? null : SiteMeta.inferLang(env)) || "en";
+        // 静态 HTML 里生效的是哪一套语言值，最后才退回英文；
+        // forcedLang（多语言预渲染副本）优先
+        const staticLang = forcedLang || configured || (explicitAuto ? null : SiteMeta.inferLang(env)) || "en";
 
         // <html lang> 跟静态 HTML 实际用的那套语言保持一致（含推断出来的语言）
         html = html.replace(/(<html\b[^>]*\slang=")([^"]*)(")/i,
@@ -207,11 +210,13 @@ export class SiteMeta {
                 return open + (staticLang === "zh" ? "zh-CN" : staticLang) + close;
             });
 
-        if (configured) {
+        // 前端 i18n 靠这个 meta 决定默认语言（localStorage 里的用户选择优先）；
+        // 显式设了 SITE_LANG 时以它为准（这种情况服务端也只会发那一套的页面），
+        // 否则以这份文件自身的语言为准；都没设就保持"跟随浏览器"的自动行为
+        const defaultLocale = configured || forcedLang;
 
-            // 前端 i18n 靠这个 meta 决定默认语言（localStorage 里的用户选择优先）；
-            // 只在显式设了 SITE_LANG 时才写，没设就保持"跟随浏览器"的自动行为
-            html = SiteMeta.setMeta(html, "default-locale", configured);
+        if (defaultLocale) {
+            html = SiteMeta.setMeta(html, "default-locale", defaultLocale);
         }
 
         // ---------- 语言相关项：两套都注入给前端，静态 HTML 里放 staticLang 那一套 ----------
@@ -292,16 +297,20 @@ export class SiteMeta {
         return html;
     }
 
-    /** 读出 index.html 并应用环境变量覆盖；文件不存在时返回 null */
-    public static loadIndexHtml(publicDir: string, env: NodeJS.ProcessEnv = process.env): string | null {
+    /**
+     * 读出 index.html 并应用环境变量覆盖；文件不存在时返回 null。
+     * 可以指定文件名（多语言副本 index.zh.html / index.en.html）以及该文件对应的语言。
+     */
+    public static loadIndexHtml(publicDir: string, env: NodeJS.ProcessEnv = process.env,
+                                name = "index.html", forcedLang?: string): string | null {
 
-        const file = path.join(publicDir, "index.html");
+        const file = path.join(publicDir, name);
 
         if (!fs.existsSync(file)) {
             return null;
         }
 
-        return SiteMeta.apply(fs.readFileSync(file, "utf-8"), env);
+        return SiteMeta.apply(fs.readFileSync(file, "utf-8"), env, forcedLang);
     }
 
     /** 启动日志用：本次生效的覆盖项（不含默认值），含 _ZH / _EN 变体 */

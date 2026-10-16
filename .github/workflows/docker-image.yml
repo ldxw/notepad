@@ -32,9 +32,9 @@ on:
         type: boolean
         default: true
       siteLang:
-        description: "预渲染（静态 HTML）用的界面语言：zh / en；留空则英文"
+        description: "预渲染（静态 HTML）用的界面语言：单个 zh / en，或逗号分隔的多个（如 zh,en 表示中英各渲染一份，运行时按访客语言挑）"
         type: string
-        default: "en"
+        default: "zh,en"
 
 # ghcr.io 用内置 GITHUB_TOKEN 推送；创建 Release 需要 contents: write
 permissions:
