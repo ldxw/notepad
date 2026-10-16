@@ -15,6 +15,7 @@
 
 // 会改布局的主题：各自一个模块（自己的 CSS + 可选的行为），在这里登记
 import {onApply as bentoOnApply} from "./themes/bento";
+import {onApply as glassOnApply} from "./themes/glass";
 
 export const DEFAULT_MODE = "auto";
 export const DEFAULT_SKIN = "classic";
@@ -26,7 +27,7 @@ const META_MODE = "site-theme";
 const META_SKIN = "site-skin";
 
 /** 生成一套配色的全部令牌：只给关键色，其余按同一色系推出来，避免每套写十条 */
-function palette({bg, surface, surface2, text, muted, border, accent, link, code, header, btnBg, btnText, ring}) {
+function palette({bg, surface, surface2, text, muted, border, accent, link, code, header, btnBg, btnText, ring, ...extra}) {
     return {
         "--bg": bg,
         "--surface": surface,
@@ -41,7 +42,9 @@ function palette({bg, surface, surface2, text, muted, border, accent, link, code
         // 行动按钮与键盘焦点环：没单独给就跟着主色走
         "--btn-bg": btnBg || accent,
         "--btn-text": btnText || "#ffffff",
-        "--ring": ring || accent
+        "--ring": ring || accent,
+        // 主题自用的额外令牌（如 Glass 的渐变三段色），原样透传
+        ...extra
     };
 }
 
@@ -207,12 +210,46 @@ export const skins = [
             code: "#1d212c", header: "#12151d",
             btnBg: "#818cf8", btnText: "#0f1117", ring: "#818cf8"
         })
+    },
+
+    {
+        // 玻璃拟态：深蓝对角渐变底 + 星点 + 半透明磨砂卡片。
+        // 结构样式在 themes/glass.css（渐变三段色等自用令牌也在那里消费）。
+        id: "glass",
+        labelKey: "skin.glass",
+        light: palette({
+            bg: "#eef2fb", surface: "rgba(255, 255, 255, .55)", surface2: "rgba(255, 255, 255, .45)",
+            text: "#0f172a", muted: "rgba(15, 23, 42, .62)", border: "rgba(15, 23, 42, .12)",
+            accent: "#2563eb", link: "#1d4ed8", code: "rgba(255, 255, 255, .5)", header: "rgba(255, 255, 255, .55)",
+            btnBg: "#2563eb", btnText: "#ffffff", ring: "#2563eb",
+            "--glass-from": "#dbeafe", "--glass-via": "#c7d2fe", "--glass-to": "#bfdbfe",
+            "--glass-surface": "rgba(255, 255, 255, .55)",
+            "--glass-border": "rgba(15, 23, 42, .12)",
+            "--glass-input": "rgba(255, 255, 255, .72)",
+            "--glass-heading": "#0f172a",
+            "--glass-placeholder": "rgba(15, 23, 42, .45)",
+            "--glass-stars": "0"   /* 浅色底上星点看不见，直接关掉 */
+        }),
+        dark: palette({
+            bg: "#0f172a", surface: "rgba(255, 255, 255, .08)", surface2: "rgba(255, 255, 255, .06)",
+            text: "#ffffff", muted: "rgba(255, 255, 255, .62)", border: "rgba(255, 255, 255, .18)",
+            accent: "#93c5fd", link: "#bfdbfe", code: "rgba(255, 255, 255, .10)", header: "rgba(255, 255, 255, .06)",
+            btnBg: "#3b82f6", btnText: "#ffffff", ring: "#93c5fd",
+            "--glass-from": "#0f172a", "--glass-via": "#1e3a8a", "--glass-to": "#4a6fa5",
+            "--glass-surface": "rgba(255, 255, 255, .08)",
+            "--glass-border": "rgba(255, 255, 255, .18)",
+            "--glass-input": "rgba(255, 255, 255, .10)",
+            "--glass-heading": "#ffffff",
+            "--glass-placeholder": "rgba(255, 255, 255, .55)",
+            "--glass-stars": "1"
+        })
     }
 ];
 
 /** 主题自带的行为：applyTheme() 每次都会调用当前主题的钩子 */
 const THEME_HOOKS = {
-    bento: bentoOnApply
+    bento: bentoOnApply,
+    glass: glassOnApply
 };
 
 const CLASSIC = skins[0];
