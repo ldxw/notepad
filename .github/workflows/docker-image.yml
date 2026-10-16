@@ -178,8 +178,8 @@ jobs:
           tags: |
             type=raw,value=latest
             type=raw,value={{date 'YYYY-MM-DD-HHmm' tz='Asia/Shanghai'}}
-            # 分支名也打一个标签，方便按分支拉取/回滚（分支名里的 / 会自动替换成 -）
-            type=ref,event=branch
+            # 固定多一个 theme 标签：这套 UI 主题版本的镜像，方便直接拉取/回滚
+            type=raw,value=theme
 
       - name: 🚀 构建并推送多架构镜像
         id: build
