@@ -158,7 +158,9 @@ nav.nav-links {
 
 // 站点页脚（首页可见，与 /backups/ 等服务端渲染页同一套配色）
 .site-footer {
-  max-width: 700px;
+  width: 100%;
+  box-sizing: border-box;
+  max-width: 46rem;
   margin: 3rem auto 0;
   padding: 1rem 1rem 0;
   border-top: 1px solid #aab7b8;
@@ -177,6 +179,49 @@ nav.nav-links {
     &:hover {
       color: #f42f42;
     }
+  }
+}
+
+// 首页说明卡片：与 /backups/ 的说明卡片同一套观感（浅底、细边框、居中）
+.notes-root {
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+.note-card {
+  margin: 1.25rem auto 0;
+  padding: 1.5rem 1.75rem;
+  background: #fafafa;
+  border: 1px solid #d8dede;
+  border-radius: 10px;
+  color: #4a4a4a;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  text-align: center;
+
+  h2 {
+    margin: 0 0 0.85rem;
+    font-size: 1.15rem;
+    color: #2c3e50;
+    text-align: center;
+  }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+
+  ul {
+    margin: 0 0 0.75rem;
+    padding: 0;
+    list-style: none;
+
+    li {
+      margin: 0 0 0.5rem;
+    }
+  }
+
+  a {
+    color: #0000ee;
   }
 }
 

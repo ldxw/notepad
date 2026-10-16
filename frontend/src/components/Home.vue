@@ -21,56 +21,60 @@
 
         </div>
 
-        <hr>
+        <div class="notes-root">
 
-        <div class="my-5">
+            <section class="note-card">
+                <p v-html="t('home.description')"></p>
+            </section>
 
-            <p v-html="t('home.description')"></p>
+            <section class="note-card">
+                <h2>{{ t('home.featuresTitle') }}</h2>
 
-            <h2>{{ t('home.featuresTitle') }}</h2>
+                <ul id="notepad_features">
+                    <li v-html="t('home.feature1')"></li>
 
-            <ul id="notepad_features">
-                <li v-html="t('home.feature1')"></li>
+                    <li v-html="t('home.feature2')"></li>
 
-                <li v-html="t('home.feature2')"></li>
+                    <li v-html="t('home.feature3')"></li>
 
-                <li v-html="t('home.feature3')"></li>
+                    <li v-html="t('home.feature4')"></li>
+                </ul>
 
-                <li v-html="t('home.feature4')"></li>
+                <p v-html="t('home.portable')"></p>
+            </section>
 
-            </ul>
+            <section class="note-card">
+                <h2>{{ t('home.securityTitle') }}</h2>
 
-            <p class="my-4"></p>
+                <p v-html="t('home.securityP1')"></p>
 
-            <p v-html="t('home.portable')"></p>
+                <p v-html="t('home.securityP2')"></p>
 
+                <p>
+                    <a href="/backups/" target="_blank">/backups/</a>
+                    <br>
+                    <span v-html="t('home.securityP3')"></span>
+                </p>
 
-            <h2>{{ t('home.securityTitle') }}</h2>
+                <p v-html="t('home.securityP4')"></p>
+            </section>
 
-            <p v-html="t('home.securityP1')"></p>
+            <section class="note-card">
+                <h2>{{ t('home.forgotTitle') }}</h2>
 
-            <p v-html="t('home.securityP2')"></p>
+                <p v-html="t('home.forgotP')"></p>
+            </section>
 
-            <p>
-                <a href="/backups/" target="_blank">/backups/</a>
-                <br>
-                <span v-html="t('home.securityP3')"></span>
-            </p>
+            <section class="note-card">
+                <h2>{{ t('home.feedbackTitle') }}</h2>
 
-            <p v-html="t('home.securityP4')"></p>
+                <p>
+                    {{ t('home.feedbackP') }}
 
-            <h2>{{ t('home.forgotTitle') }}</h2>
-
-            <p v-html="t('home.forgotP')"></p>
-
-            <h2>{{ t('home.feedbackTitle') }}</h2>
-
-            <p class="pb-12">
-                {{ t('home.feedbackP') }}
-
-                <a href="https://github.com/Athlon1600/notepad"
-                   target="_blank">https://github.com/Athlon1600/notepad</a>
-            </p>
+                    <a href="https://github.com/Athlon1600/notepad"
+                       target="_blank">https://github.com/Athlon1600/notepad</a>
+                </p>
+            </section>
 
         </div>
 
