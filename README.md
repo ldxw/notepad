@@ -212,7 +212,9 @@ not picked a theme themselves — a visitor's own choice is stored in the browse
 unknown name falls back to the default theme (the backend validates the format only; the list
 lives in the frontend), so a typo never renders an unstyled page.
 
-The palettes are data in the `skins` array of `frontend/src/theme.js`. Adding a tenth theme is one
+**Screenshots and names of all twelve themes** are in [docs/themes/README.md](docs/themes/README.md) (bilingual, light + dark for each).
+
+The palettes are data in the `skins` array of `frontend/src/theme.js`. Adding a thirteenth theme is one
 entry there (`id`, a label in every locale, and a light + dark token set) — the picker, the
 preview swatches and `SITE_SKIN` pick it up automatically.
 

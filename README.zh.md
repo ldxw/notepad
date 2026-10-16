@@ -203,7 +203,9 @@ SITE_SKIN="paper"
 访客在页头选过的记在浏览器里，优先级更高。名字写错只会退回默认主题（后端只校验格式，
 名单在前端），不会渲染出没样式的页面。
 
-配色数据在 `frontend/src/theme.js` 的 `skins` 数组里，想加第 10 套主题就加一条记录
+**12 套主题的截图与名字**见 [docs/themes/README.zh.md](docs/themes/README.zh.md)（中英双份：每套都有浅色/深色两张图）。
+
+配色数据在 `frontend/src/theme.js` 的 `skins` 数组里，想加第 13 套主题就加一条记录
 （`id` + 中英标签 + 明暗两套令牌），选择面板、预览色块和 `SITE_SKIN` 会自动认得它。
 
 要写**会改布局**的主题（不只是换色），在 `frontend/src/themes/` 下放一个模块：
