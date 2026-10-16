@@ -203,7 +203,25 @@ SITE_SKIN="paper"
 访客在页头选过的记在浏览器里，优先级更高。名字写错只会退回默认主题（后端只校验格式，
 名单在前端），不会渲染出没样式的页面。
 
-**11 套主题的截图与名字**见 [docs/themes/README.zh.md](docs/themes/README.zh.md)（中英双份：每套都有浅色/深色两张图）。
+### 主题一览
+
+11 套主题，每套都有浅色 / 深色两版（共 22 种外观），下面是真实运行时的截图：
+
+| # | 名称 | 浅色 | 深色 |
+|---|---|---|---|
+| 1 | `classic` **经典** — 默认，现代 teal + 橙色行动色 | ![经典 浅色](docs/themes/classic-light.png) | ![经典 深色](docs/themes/classic-dark.png) |
+| 2 | `paper` **纸张** — 暖纸张色 + 衬线 + 6px 圆角 | ![纸张 浅色](docs/themes/paper-light.png) | ![纸张 深色](docs/themes/paper-dark.png) |
+| 3 | `ocean` **海洋** — 蓝色系 | ![海洋 浅色](docs/themes/ocean-light.png) | ![海洋 深色](docs/themes/ocean-dark.png) |
+| 4 | `forest` **森林** — 绿色系 | ![森林 浅色](docs/themes/forest-light.png) | ![森林 深色](docs/themes/forest-dark.png) |
+| 5 | `grape` **葡萄** — 紫色系 | ![葡萄 浅色](docs/themes/grape-light.png) | ![葡萄 深色](docs/themes/grape-dark.png) |
+| 6 | `sunset` **日落** — 暖橙红 | ![日落 浅色](docs/themes/sunset-light.png) | ![日落 深色](docs/themes/sunset-dark.png) |
+| 7 | `mono` **黑白** — 无彩色 + 等宽 + 4px 圆角 | ![黑白 浅色](docs/themes/mono-light.png) | ![黑白 深色](docs/themes/mono-dark.png) |
+| 8 | `neon` **霓虹** — 高对比紫青 | ![霓虹 浅色](docs/themes/neon-light.png) | ![霓虹 深色](docs/themes/neon-dark.png) |
+| 9 | `bento` **磁贴** — 改布局：磁贴网格、页头滚动压缩 | ![磁贴 浅色](docs/themes/bento-light.png) | ![磁贴 深色](docs/themes/bento-dark.png) |
+| 10 | `glass` **玻璃** — 玻璃拟态：渐变底 + 星点 + 磨砂卡片 | ![玻璃 浅色](docs/themes/glass-light.png) | ![玻璃 深色](docs/themes/glass-dark.png) |
+| 11 | `fluid` **自适应** — 流体排版 + 手机贴底抽屉 + 安全区 | ![自适应 浅色](docs/themes/fluid-light.png) | ![自适应 深色](docs/themes/fluid-dark.png) |
+
+（画廊详情与"怎么加第 12 套"见 [docs/themes/README.zh.md](docs/themes/README.zh.md)。）
 
 配色数据在 `frontend/src/theme.js` 的 `skins` 数组里，想加第 12 套主题就加一条记录
 （`id` + 中英标签 + 明暗两套令牌），选择面板、预览色块和 `SITE_SKIN` 会自动认得它。

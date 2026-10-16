@@ -212,7 +212,26 @@ not picked a theme themselves — a visitor's own choice is stored in the browse
 unknown name falls back to the default theme (the backend validates the format only; the list
 lives in the frontend), so a typo never renders an unstyled page.
 
-**Screenshots and names of all eleven themes** are in [docs/themes/README.md](docs/themes/README.md) (bilingual, light + dark for each).
+### Theme gallery
+
+Eleven themes, each in a light and a dark palette (22 looks in total). Real screenshots of the
+running app:
+
+| # | Name | Light | Dark |
+|---|---|---|---|
+| 1 | `classic` **Classic** — default: modern teal + orange action colour | ![classic light](docs/themes/classic-light.png) | ![classic dark](docs/themes/classic-dark.png) |
+| 2 | `paper` **Paper** — warm paper tones, serif type, 6px corners | ![paper light](docs/themes/paper-light.png) | ![paper dark](docs/themes/paper-dark.png) |
+| 3 | `ocean` **Ocean** — blue | ![ocean light](docs/themes/ocean-light.png) | ![ocean dark](docs/themes/ocean-dark.png) |
+| 4 | `forest` **Forest** — green | ![forest light](docs/themes/forest-light.png) | ![forest dark](docs/themes/forest-dark.png) |
+| 5 | `grape` **Grape** — purple | ![grape light](docs/themes/grape-light.png) | ![grape dark](docs/themes/grape-dark.png) |
+| 6 | `sunset` **Sunset** — warm orange-red | ![sunset light](docs/themes/sunset-light.png) | ![sunset dark](docs/themes/sunset-dark.png) |
+| 7 | `mono` **Mono** — no colour, monospace, 4px corners | ![mono light](docs/themes/mono-light.png) | ![mono dark](docs/themes/mono-dark.png) |
+| 8 | `neon` **Neon** — high-contrast violet/cyan | ![neon light](docs/themes/neon-light.png) | ![neon dark](docs/themes/neon-dark.png) |
+| 9 | `bento` **Bento** — changes the layout: tile grid, header shrinks on scroll | ![bento light](docs/themes/bento-light.png) | ![bento dark](docs/themes/bento-dark.png) |
+| 10 | `glass` **Glass** — glassmorphism: gradient backdrop, star dots, frosted cards | ![glass light](docs/themes/glass-light.png) | ![glass dark](docs/themes/glass-dark.png) |
+| 11 | `fluid` **Fluid** — fluid type, mobile bottom-sheet panel, safe-area aware | ![fluid light](docs/themes/fluid-light.png) | ![fluid dark](docs/themes/fluid-dark.png) |
+
+(Full gallery and how to add a twelfth theme: [docs/themes/README.md](docs/themes/README.md).)
 
 The palettes are data in the `skins` array of `frontend/src/theme.js`. Adding a twelfth theme is one
 entry there (`id`, a label in every locale, and a light + dark token set) — the picker, the
