@@ -227,7 +227,7 @@ jobs:
           fi
 
           # 从本次推送的第一个仓库取（上面的登录步骤已经登录过，crane 会自动读 ~/.docker/config.json）
-          REF="$(printf '%s\n' "${{ steps.images.outputs.list }}" | head -1):${TAG}"
+          REF="$(printf '%s\n' "${{ steps.images.outputs.list }}" | head -1):theme-${TAG}"
           echo "打包来源：${REF}"
 
           PKG=/tmp/pkg
@@ -332,8 +332,8 @@ jobs:
             echo "docker load -i notepad-${TAG}-linux-amd64.tar    # x86_64"
             echo "docker load -i notepad-${TAG}-linux-arm64.tar    # ARM64"
             echo ""
-            echo "# 导入后即为 ${FIRST_IMG}:${TAG}，可直接运行"
-            echo "docker run -d --name notepad -p 3000:3000 -e TZ=Asia/Shanghai ${FIRST_IMG}:${TAG}"
+            echo "# 导入后即为 ${FIRST_IMG}:theme-${TAG}，可直接运行"
+            echo "docker run -d --name notepad -p 3000:3000 -e TZ=Asia/Shanghai ${FIRST_IMG}:theme-${TAG}"
             echo '```'
             echo
             if [ -f "$PKG/SHA256SUMS" ]; then
