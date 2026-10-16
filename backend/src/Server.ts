@@ -102,7 +102,7 @@ export class Server {
 
             if (path.indexOf("/backups") === 0) {
 
-                const zh = Server.prefersChinese(req);
+                const zh = Server.resolveLangZh(req, res);
 
                 const body = `
   <h1>403</h1>
@@ -116,7 +116,8 @@ export class Server {
 
                 return res.status(403)
                     .set('Content-Type', 'text/html; charset=utf-8')
-                    .send(Server.pageShell(zh, zh ? "已关闭下载" : "Downloads disabled", body));
+                    .send(Server.pageShell(zh, zh ? "已关闭下载" : "Downloads disabled", body,
+                        String(req.originalUrl || "/").split("?")[0]));
             }
 
             return staticMiddleware(req, res, next);
@@ -152,6 +153,88 @@ export class Server {
         return /(^|[,;\s])zh\b/i.test(accept) || accept.toLowerCase().indexOf('zh') === 0;
     }
 
+    /** 语言选择记在这个 cookie 里（服务端渲染页用；首页仍然用它自己的 localStorage["locale"]） */
+    protected static readonly LANG_COOKIE: string = "notepad_lang";
+    protected static readonly LANG_COOKIE_MAX_AGE: number = 60 * 60 * 24 * 365;
+
+    /** 归一化成 zh / en，认不出来返回 null */
+    protected static normalizeLang(value: string): "zh" | "en" | null {
+
+        const v = String(value || "").trim().toLowerCase();
+
+        if (!v) {
+            return null;
+        }
+
+        if (v.indexOf("zh") === 0) {
+            return "zh";
+        }
+
+        if (v.indexOf("en") === 0) {
+            return "en";
+        }
+
+        return null;
+    }
+
+    /** 读一个 cookie（express 没装 cookie-parser，这里自己拆） */
+    protected static readCookie(req: Request, name: string): string {
+
+        const raw = String(req.headers.cookie || "");
+
+        for (const part of raw.split(";")) {
+
+            const eq = part.indexOf("=");
+
+            if (eq < 0) {
+                continue;
+            }
+
+            if (part.substring(0, eq).trim() === name) {
+                return decodeURIComponent(part.substring(eq + 1).trim());
+            }
+        }
+
+        return "";
+    }
+
+    /**
+     * 服务端渲染页（/backups/、403）用哪套语言，优先级和首页保持一致：
+     *   ① ?lang=zh|en（显式切换，同时写下 cookie）
+     *   ② 之前选过的 cookie
+     *   ③ SITE_LANG（容器启动时注入的默认语言，和首页的 default-locale 同源）
+     *   ④ 浏览器 Accept-Language
+     * 传了 res 的话，第 ① 种会顺手 Set-Cookie，下次不带参数也记得。
+     */
+    protected static resolveLangZh(req: Request, res?: Response): boolean {
+
+        const query = Server.normalizeLang(String((req.query || {})["lang"] || ""));
+
+        if (query) {
+
+            if (res) {
+                res.setHeader("Set-Cookie", Server.LANG_COOKIE + "=" + query
+                    + "; Path=/; Max-Age=" + Server.LANG_COOKIE_MAX_AGE + "; SameSite=Lax");
+            }
+
+            return query === "zh";
+        }
+
+        const saved = Server.normalizeLang(Server.readCookie(req, Server.LANG_COOKIE));
+
+        if (saved) {
+            return saved === "zh";
+        }
+
+        const siteDefault = Server.normalizeLang(process.env.SITE_LANG || "");
+
+        if (siteDefault) {
+            return siteDefault === "zh";
+        }
+
+        return Server.prefersChinese(req);
+    }
+
     /**
      * 页头里的站点名，和首页同一套规则：_ZH / _EN 两套值，退回不带后缀的，
      * 都没有就用默认值。返回值已做 HTML 转义。
@@ -172,6 +255,33 @@ export class Server {
         }
 
         return "notepad.mx";
+    }
+
+    /**
+     * 页头中间的标语 —— 与首页同一句话（首页取自 frontend/src/i18n.js 的 app.banner）。
+     * 改文案时两边一起改：首页在 i18n.js，服务端渲染页在这里。
+     */
+    protected static headerBanner(zh: boolean): string {
+
+        return zh ? "安全地把你的笔记保存在网上" : "Store your notes securely online";
+    }
+
+    /**
+     * 归档保留天数（运行时变量 ARCHIVE_KEEP_DAYS），只用于在 /backups/ 页上说明策略；
+     * 真正的删除在 backend/bin/archive.sh 里做。解析规则和它保持一致：
+     * 不设 / 0 / off / false / no / disabled → null（保留全部）；正整数 → 该数字。
+     */
+    protected static archiveKeepDays(): number | null {
+
+        const raw = String(process.env.ARCHIVE_KEEP_DAYS === undefined ? "" : process.env.ARCHIVE_KEEP_DAYS)
+            .trim()
+            .toLowerCase();
+
+        if (!raw || ["0", "off", "false", "no", "disable", "disabled"].includes(raw)) {
+            return null;
+        }
+
+        return /^[0-9]+$/.test(raw) ? parseInt(raw, 10) : null;
     }
 
     /**
@@ -300,14 +410,73 @@ export class Server {
   }
   footer { margin-top: 2.5rem; color: #a3a1a1; font-size: 0.8rem; line-height: 1.7; }
   footer code { background: transparent; padding: 0; }
+  /* 页头中间标语（首页同款：居中，窄屏隐藏） */
+  .site-header .banner {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 1rem;
+    text-align: center;
+  }
+  .site-header .banner h3 {
+    margin: 0;
+    font-size: 1.17rem;
+    font-weight: 700;
+  }
+  .site-header .right {
+    display: flex;
+    align-items: center;
+    flex: none;
+    /* 窄屏时中间的标语会隐藏，这一组必须自己贴右，否则会紧跟在站名后面 */
+    margin-left: auto;
+  }
+  .site-header .nav-links a { padding: 0 0.5rem; }
+  .lang-switch {
+    display: flex;
+    align-items: center;
+    flex: none;
+    margin-left: 0.5rem;
+    border: 1px solid #aab7b8;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.6);
+    overflow: hidden;
+  }
+  .lang-switch .lang-btn {
+    display: block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.2;
+    color: #2c3e50;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .lang-switch .lang-btn + .lang-btn { border-left: 1px solid #aab7b8; }
+  .lang-switch a.lang-btn:hover { background-color: rgba(0, 0, 0, 0.06); color: #2c3e50; }
+  .lang-switch .lang-btn.active {
+    background-color: rgba(44, 62, 80, 0.16);
+    font-weight: 700;
+    cursor: default;
+  }
   @media (max-width: 768px) {
     .page-icon { display: none; }
+    /* 和首页一致：窄屏只留站名 + 语言切换 */
+    .site-header .banner, .site-header .nav-links { display: none; }
   }
 `;
     }
 
-    /** 套上站点页头，拼出完整 HTML（/backups/ 列表页与 403 页共用） */
-    protected static pageShell(zh: boolean, title: string, body: string): string {
+    /**
+     * 套上站点页头，拼出完整 HTML（/backups/ 列表页与 403 页共用）。
+     * 页头刻意与首页一致：左边站名、中间标语、右边 GitHub 链接 + 语言切换；
+     * 窄屏（<768px）标语与 GitHub 链接隐藏，右侧那组靠 margin-left:auto 保持贴右。
+     * basePath 是当前页面路径，用来拼语言切换链接（?lang=zh / ?lang=en）。
+     */
+    protected static pageShell(zh: boolean, title: string, body: string, basePath: string = "/"): string {
+
+        const other = zh ? "en" : "zh";
+
+        const otherLabel = zh ? "English" : "中文";
+
+        const here = Server.escapeHtml(basePath || "/");
 
         return `<!DOCTYPE html>
 <html lang="${zh ? "zh-CN" : "en"}">
@@ -322,6 +491,11 @@ ${Server.pageCss()}</style>
 <body>
 <div class="site-header">
   <h1><span class="page-icon">📃</span><a class="brand" href="/">${Server.siteNameFor(zh)}</a></h1>
+  <div class="banner"><h3>${Server.headerBanner(zh)}</h3></div>
+  <div class="right">
+    <nav class="nav-links"><a href="https://github.com/Athlon1600/notepad" target="_blank" rel="nofollow noopener noreferrer">${zh ? "GitHub 仓库" : "GitHub Repo"}</a></nav>
+    <span class="lang-switch" role="group" aria-label="${zh ? "语言" : "Language"}"><span class="lang-btn active" aria-current="true">${zh ? "中文" : "English"}</span><a class="lang-btn" href="${here}?lang=${other}" title="${zh ? "切换到 English" : "Switch to 中文"}" onclick="try{localStorage.setItem('locale','${other}')}catch(e){}">${otherLabel}</a></span>
+  </div>
 </div>
 <div class="wrap">
 ${body}
@@ -345,6 +519,9 @@ ${body}
 
         const canDownload = Server.backupsDownloadEnabled();
 
+        // 归档保留天数：只用于在页脚说明策略（真正的删除在 backend/bin/archive.sh 里做）
+        const keepDays = Server.archiveKeepDays();
+
         this.app.get(['/backups', '/backups/'], (req: Request, res: Response) => {
 
             let files: {name: string, size: number, mtime: Date}[] = [];
@@ -359,7 +536,7 @@ ${body}
                 // 还没产生过备份（首次归档之前）—— 当作空目录处理
             }
 
-            const zh = Server.prefersChinese(req);
+            const zh = Server.resolveLangZh(req, res);
 
             const totalSize = files.reduce((sum: number, f: any) => sum + f.size, 0);
 
@@ -425,11 +602,17 @@ ${inner}
       ? `这里是本实例 <code>backend/public/backups/</code> 里的归档，${canDownload
           ? "公开可下载"
           : "已由 <code>BACKUPS_DOWNLOAD</code> 关闭下载，仅列出清单"}。<br>
+         ${keepDays
+          ? `归档只保留最近 ${keepDays} 天（<code>ARCHIVE_KEEP_DAYS</code>），更早的会自动删除。`
+          : "归档不自动删除（<code>ARCHIVE_KEEP_DAYS</code> 未设，保留全部）。"}<br>
          文件里是加密后的笔记密文，没有对应口令无法解密；换 salt 或换机器时可以用它们把数据搬过去。<br>
          时间为容器本地时间${process.env.TZ ? `（TZ=${Server.escapeHtml(process.env.TZ)}）` : ""}。`
       : `Archives from <code>backend/public/backups/</code> of this instance, ${canDownload
           ? "public by design"
           : "listed only — downloads are off via <code>BACKUPS_DOWNLOAD</code>"}.<br>
+         ${keepDays
+          ? `Only the last ${keepDays} day(s) are kept (<code>ARCHIVE_KEEP_DAYS</code>); older archives are removed automatically.`
+          : "Nothing is deleted automatically (<code>ARCHIVE_KEEP_DAYS</code> unset — every archive is kept)."}<br>
          They contain encrypted note blobs only — useless without the matching passphrase — and can be
          unpacked into <code>backend/storage</code> to move data to another host or salt.<br>
          Times are the container's local time${process.env.TZ ? ` (TZ=${Server.escapeHtml(process.env.TZ)})` : ""}.`}
@@ -437,7 +620,7 @@ ${inner}
 `;
 
             res.set('Content-Type', 'text/html; charset=utf-8');
-            res.send(Server.pageShell(zh, zh ? "备份文件" : "Backups", body));
+            res.send(Server.pageShell(zh, zh ? "备份文件" : "Backups", body, "/backups/"));
         });
     }
 

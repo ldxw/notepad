@@ -36,6 +36,8 @@ services:
       ARCHIVE_CRON: "${ARCHIVE_CRON:-30 3 * * *}"
       # 归档下载开关：on（默认）→ /backups/ 公开可下载；off → 只列清单，下载入口与直链都拦掉
       BACKUPS_DOWNLOAD: "${BACKUPS_DOWNLOAD:-on}"
+      # 归档保留天数：不设 = 保留全部；填正整数 N = 只保留最近 N 天（归档任务自动删除更早的）
+      ARCHIVE_KEEP_DAYS: "${ARCHIVE_KEEP_DAYS:-}"
 #    build:
 #      context: "."
 #      target: "runner"

@@ -25,6 +25,11 @@ LOG_FILE="/var/log/archive-cron.log"
 
 SCHEDULE="${ARCHIVE_CRON:-30 3 * * *}"
 
+# 归档保留天数（ARCHIVE_KEEP_DAYS）随归档任务一起传给 archive.sh。
+# 注意：cron 执行的命令**不会**继承容器的环境变量，所以这里必须显式带进去，
+# 否则只有手动 `docker exec ... archive.sh` 时才看得到这个变量。
+KEEP_DAYS="${ARCHIVE_KEEP_DAYS:-}"
+
 if [ "$SCHEDULE" = "off" ] || [ "$SCHEDULE" = "0" ]; then
     echo "[cron] ARCHIVE_CRON=$SCHEDULE → 定时归档不启动"
     exit 0
@@ -36,7 +41,8 @@ cat > "$CRONTAB_FILE" <<EOF
 SHELL=/bin/sh
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # 定时归档笔记（archive.sh 会在当前目录生成临时 tar，所以固定切到 /app/backend）
-$SCHEDULE cd /app/backend && sh bin/archive.sh >> $LOG_FILE 2>&1
+# ARCHIVE_KEEP_DAYS 显式传入：cron 不继承容器环境变量
+$SCHEDULE cd /app/backend && ARCHIVE_KEEP_DAYS='$KEEP_DAYS' sh bin/archive.sh >> $LOG_FILE 2>&1
 EOF
 
 chmod 600 "$CRONTAB_FILE"
@@ -45,3 +51,9 @@ chmod 600 "$CRONTAB_FILE"
 crond -c "$CRONTAB_DIR" -b
 
 echo "[cron] 归档定时已启动：$SCHEDULE（时区 TZ=${TZ:-UTC}，日志容器内 $LOG_FILE）"
+
+if [ -n "$KEEP_DAYS" ] && [ "$KEEP_DAYS" != "0" ]; then
+    echo "[cron] 归档保留：最近 $KEEP_DAYS 天（更早的由 archive.sh 自动删除）"
+else
+    echo "[cron] 归档保留：全部（不自动删除；要限制就设 ARCHIVE_KEEP_DAYS）"
+fi

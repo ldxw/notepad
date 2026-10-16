@@ -148,7 +148,7 @@ That is all — the switcher picks it up automatically.
 defaults baked into the built `index.html` from `frontend/site.config.js` (build time). They can then be
 overridden **at container start** — no rebuild needed — with environment variables.
 
-Every supported variable (page metadata, `SITE_LANG`, `TZ`, `ARCHIVE_CRON`, `BACKUPS_DOWNLOAD`) is laid out and documented in
+Every supported variable (page metadata, `SITE_LANG`, `TZ`, `ARCHIVE_CRON`, `ARCHIVE_KEEP_DAYS`, `BACKUPS_DOWNLOAD`) is laid out and documented in
 **`.env.example`** — copy it next to `docker-compose.yml` and edit:
 
 ```shell
@@ -221,6 +221,7 @@ Both the schedule and the timezone are environment variables - no rebuild needed
     environment:
       TZ: Asia/Shanghai          # the hour below is interpreted in this timezone (container default is UTC)
       ARCHIVE_CRON: "30 3 * * *" # standard 5-field cron; "off" disables the job
+      ARCHIVE_KEEP_DAYS: ""      # keep only the last N days of dated archives; empty = keep every archive
 ```
 
 The crontab is written at container start by `docker/setup-cron.sh`, and the job's output lands in
@@ -230,6 +231,24 @@ The crontab is written at container start by `docker/setup-cron.sh`, and the job
 docker exec -it notepad tail -n 20 /var/log/archive-cron.log
 docker exec -it notepad ls -lh backend/public/backups/
 ```
+
+### Archive retention
+
+One archive a day adds up. Cap it with `ARCHIVE_KEEP_DAYS`:
+
+- **Unset (default)**: keep everything — nothing is ever deleted automatically;
+- **A positive N**: keep only the `archive_YYYYMMDD.tar.gz` files from the last N days; older ones are
+  removed by the archive job. `archive.tar.gz` (the "latest" copy) is always kept.
+- An invalid value (say `abc`) is treated as "keep everything" with a warning — it never makes the
+  archive job fail.
+
+```bash
+# run it once with "keep 7 days"
+docker exec -it notepad env ARCHIVE_KEEP_DAYS=7 sh backend/bin/archive.sh
+```
+
+The pruning happens inside the archive job (03:30 daily by default), so either wait for the next run
+or execute the command above once. The `/backups/` page footer shows the settings currently in effect.
 
 ### Browsing the backups
 

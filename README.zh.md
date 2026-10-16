@@ -142,7 +142,7 @@ setLocale("zh");        // 切换语言（会持久化，并同步 <html lang> �
 `frontend/site.config.js` 写进构建好的 `index.html`。之后可以在**容器启动时**用环境变量覆盖 ——
 无需重新构建。
 
-所有支持的变量（页面元信息、`SITE_LANG`、`TZ`、`ARCHIVE_CRON`、`BACKUPS_DOWNLOAD`）都在 **`.env.example`** 里列好并带注释，
+所有支持的变量（页面元信息、`SITE_LANG`、`TZ`、`ARCHIVE_CRON`、`ARCHIVE_KEEP_DAYS`、`BACKUPS_DOWNLOAD`）都在 **`.env.example`** 里列好并带注释，
 复制到 `docker-compose.yml` 旁边改一下即可：
 
 ```shell
@@ -213,6 +213,7 @@ docker exec -it notepad sh -c "sh backend/bin/archive.sh"   # 定时任务跑的
     environment:
       TZ: Asia/Shanghai          # 下面的小时按这个时区解释（容器默认 UTC）
       ARCHIVE_CRON: "30 3 * * *" # 标准 5 段 cron；填 "off" 可关闭
+      ARCHIVE_KEEP_DAYS: ""      # 只保留最近 N 天的归档；留空 = 全部保留
 ```
 
 crontab 由 `docker/setup-cron.sh` 在容器启动时写入，任务输出落在容器内的
@@ -222,6 +223,23 @@ crontab 由 `docker/setup-cron.sh` 在容器启动时写入，任务输出落在
 docker exec -it notepad tail -n 20 /var/log/archive-cron.log
 docker exec -it notepad ls -lh backend/public/backups/
 ```
+
+### 归档保留天数
+
+归档文件一天多一个，堆久了会占地方。用 `ARCHIVE_KEEP_DAYS` 限制：
+
+- **不设（默认）**：全部保留，**绝不自动删除**；
+- **正整数 N**：只保留最近 N 天生成的 `archive_YYYYMMDD.tar.gz`，更早的删掉；
+  `archive.tar.gz`（最新一份）永远保留。
+- 值不合法（比如填了 `abc`）会按“全部保留”处理并打印一句提示，不会让归档任务失败。
+
+```bash
+# 手动按“只留最近 7 天”跑一次
+docker exec -it notepad env ARCHIVE_KEEP_DAYS=7 sh backend/bin/archive.sh
+```
+
+删除发生在归档任务里（默认每天 03:30 一次），所以改完等下一次归档、或手动跑一次上面那条即可生效。
+`/backups/` 页脚会显示当前生效的策略（保留 N 天 / 保留全部）。
 
 ### 备份文件在哪看
 
