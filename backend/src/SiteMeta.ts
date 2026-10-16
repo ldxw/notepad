@@ -215,6 +215,18 @@ export class SiteMeta {
             }
         });
 
+        // 页头站名：预渲染出来的 HTML 里写死的是构建时的默认名（比如 notepad.mx），
+        // 前端要等 Vue 挂载后才按 meta 改成配置值 —— 刷新时就能看到"先默认名、后配置名"的闪烁。
+        // 这里直接把静态 HTML 里那段文字换掉，消除闪烁（图标在 <a> 外面，不受影响）。
+        const staticSiteName = SiteMeta.valueFor(env, SiteMeta.ENV.siteName, staticLang);
+
+        if (staticSiteName) {
+            html = html.replace(/(<a\b[^>]*\bclass="[^"]*\bbrand\b[^"]*"[^>]*>)([\s\S]*?)(<\/a>)/i,
+                (_m: string, open: string, _old: string, close: string) => {
+                    return open + SiteMeta.escapeText(staticSiteName) + close;
+                });
+        }
+
         // ---------- 与语言无关的项 ----------
         const author = env[SiteMeta.ENV.author];
 
