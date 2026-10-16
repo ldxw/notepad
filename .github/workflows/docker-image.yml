@@ -47,8 +47,6 @@ env:
 
 jobs:
   build:
-    # 本工作流只服务 upstream-latest：别的分支即使手动触发也直接跳过
-    if: github.ref == 'refs/heads/upstream-latest'
     runs-on: ubuntu-latest
 
     # secrets 不能写在 if/lint 条件里，先注入 env 再用 env 判断
@@ -164,14 +162,18 @@ jobs:
           username: ${{ env.ALIYUN_DOCKER_USERNAME }}
           password: ${{ env.ALIYUN_DOCKER_TOKEN }}
 
-      - name: 🏷️ 生成镜像标签（latest + 时间）
+      - name: 🏷️ 生成镜像标签（每个分支只管自己那组）
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.images.outputs.list }}
           tags: |
-            type=raw,value=latest
-            type=raw,value={{date 'YYYY-MM-DD-HHmm' tz='Asia/Shanghai'}}
+            # upstream-latest → latest + 时间
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/upstream-latest' }}
+            type=raw,value={{date 'YYYY-MM-DD-HHmm' tz='Asia/Shanghai'}},enable=${{ github.ref == 'refs/heads/upstream-latest' }}
+            # 其它分支（主题开发）→ theme + theme-时间，不碰主线的标签
+            type=raw,value=theme,enable=${{ github.ref != 'refs/heads/upstream-latest' }}
+            type=raw,value=theme-{{date 'YYYY-MM-DD-HHmm' tz='Asia/Shanghai'}},enable=${{ github.ref != 'refs/heads/upstream-latest' }}
 
       - name: 🚀 构建并推送多架构镜像
         id: build
