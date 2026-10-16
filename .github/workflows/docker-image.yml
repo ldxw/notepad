@@ -178,8 +178,9 @@ jobs:
           tags: |
             type=raw,value=latest
             type=raw,value={{date 'YYYY-MM-DD-HHmm' tz='Asia/Shanghai'}}
-            # 固定多一个 theme 标签：这套 UI 主题版本的镜像，方便直接拉取/回滚
+            # 主题版本的镜像：固定 theme 标签 + 带时间的一个，便于直接拉取和回滚
             type=raw,value=theme
+            type=raw,value=theme-{{date 'YYYY-MM-DD-HHmm' tz='Asia/Shanghai'}}
 
       - name: 🚀 构建并推送多架构镜像
         id: build
@@ -303,7 +304,7 @@ jobs:
             echo
             echo "- **构建时间**：${BUILD_TIME}（北京时间 UTC+8）"
             echo "- **提交**：\`${SHA}\`"
-            echo "- **镜像标签**：\`latest\`、\`${TAG}\`"
+            echo "- **镜像标签**：\`latest\`、\`${TAG}\`、\`theme\`、\`theme-${TAG}\`"
             echo "- **支持架构**：\`${PLATFORMS}\`（多架构 manifest list）"
             echo "- **文件校验**：请使用本次 Release 附带的 \`SHA256SUMS\` 校验下载下来的镜像包（\`sha256sum -c SHA256SUMS\`）"
             echo
