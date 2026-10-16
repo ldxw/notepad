@@ -612,17 +612,16 @@ ${inner}
   <svg class="file-icon" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h3.4l2 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
   <p>${zh ? "还没有备份文件。" : "No archives yet."}</p>
   <p class="muted">${zh
-      ? "容器内的定时任务（<code>ARCHIVE_CRON</code>，默认每天 03:30）会自动生成，也可以手动执行："
-      : "The in-container cron job (<code>ARCHIVE_CRON</code>, 03:30 daily by default) creates them, or run it by hand:"}</p>
-  <pre>docker exec -it notepad sh -c "sh backend/bin/archive.sh"</pre>
+      ? "备份由站点自动定时生成，不需要手动操作 —— 生成后这里就会显示清单。"
+      : "Archives are created automatically on a schedule; the list shows up here once the first one exists."}</p>
 </div>`;
 
             // 关闭下载时的提示条
             const notice = canDownload ? "" : `<div class="notice">
   <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
   <span>${zh
-      ? "管理员已关闭归档下载（<code>BACKUPS_DOWNLOAD=off</code>），这里只列出文件清单。"
-      : "Downloads are disabled by the administrator (<code>BACKUPS_DOWNLOAD=off</code>) — this page only lists the archives."}</span>
+      ? "管理员已关闭归档下载，这里只列出文件清单。"
+      : "Downloads are disabled by the administrator — this page only lists the archives."}</span>
 </div>`;
 
             const body = `
@@ -639,23 +638,23 @@ ${inner}
 
   <footer>
     ${zh
-      ? `这里是本实例 <code>backend/public/backups/</code> 里的归档，${canDownload
-          ? "公开可下载"
-          : "已由 <code>BACKUPS_DOWNLOAD</code> 关闭下载，仅列出清单"}。<br>
+      ? `这里是本实例的加密笔记归档，${canDownload
+          ? "任何人都可以下载"
+          : "已关闭下载，仅列出清单"}。<br>
          ${keepDays
-          ? `归档只保留最近 ${keepDays} 天（<code>ARCHIVE_KEEP_DAYS</code>），更早的会自动删除。`
-          : "归档不自动删除（<code>ARCHIVE_KEEP_DAYS</code> 未设，保留全部）。"}<br>
-         文件里是加密后的笔记密文，没有对应口令无法解密；换 salt 或换机器时可以用它们把数据搬过去。<br>
-         时间为容器本地时间${process.env.TZ ? `（TZ=${Server.escapeHtml(process.env.TZ)}）` : ""}。`
-      : `Archives from <code>backend/public/backups/</code> of this instance, ${canDownload
-          ? "public by design"
-          : "listed only — downloads are off via <code>BACKUPS_DOWNLOAD</code>"}.<br>
+          ? `归档只保留最近 ${keepDays} 天，更早的会自动删除。`
+          : "归档不自动删除，全部保留。"}<br>
+         里面是加密后的笔记密文，没有对应口令无法解密；下载后解压，可以在另一个实例上继续使用这些笔记。<br>
+         时间为站点本地时间。`
+      : `Encrypted note archives of this instance${canDownload
+          ? " — anyone can download them"
+          : " — downloads are off, so this page only lists them"}.<br>
          ${keepDays
-          ? `Only the last ${keepDays} day(s) are kept (<code>ARCHIVE_KEEP_DAYS</code>); older archives are removed automatically.`
-          : "Nothing is deleted automatically (<code>ARCHIVE_KEEP_DAYS</code> unset — every archive is kept)."}<br>
-         They contain encrypted note blobs only — useless without the matching passphrase — and can be
-         unpacked into <code>backend/storage</code> to move data to another host or salt.<br>
-         Times are the container's local time${process.env.TZ ? ` (TZ=${Server.escapeHtml(process.env.TZ)})` : ""}.`}
+          ? `Only the last ${keepDays} day(s) are kept; older archives are removed automatically.`
+          : "Nothing is deleted automatically — every archive is kept."}<br>
+         They hold encrypted note blobs only, useless without the matching passphrase; unpack a
+         downloaded archive to carry the notes over to another instance.<br>
+         Times are the site's local time.`}
   </footer>
 `;
 
