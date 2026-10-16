@@ -49,6 +49,26 @@ html[data-skin="fluid"] {
         margin-top: clamp(2rem, 6vh, 3.5rem);
     }
 
+    /* ---- 首屏：左对齐、更宽的输入，做成"应用式"而不是居中式 ---- */
+    .login-box {
+        max-width: min(46rem, 100%) !important;
+    }
+
+    .login-box > h1 {
+        text-align: left;
+        padding-bottom: 0.6rem;
+        border-bottom: 2px solid var(--accent);
+    }
+
+    .login-box > .text-muted {
+        margin-top: 0.35rem;
+    }
+
+    #phrase {
+        text-align: left;
+        padding-left: 1.2em;
+    }
+
     /* ---- 编辑区：用真实视口高度算，键盘弹出时也不会把按钮挤没 ---- */
     textarea {
         height: calc(var(--app-vh, 100vh) * 0.6);

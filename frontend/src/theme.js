@@ -219,14 +219,15 @@ export const skins = [
         id: "glass",
         labelKey: "skin.glass",
         light: palette({
-            bg: "#eef2fb", surface: "rgba(255, 255, 255, .55)", surface2: "rgba(255, 255, 255, .45)",
+            bg: "#eef2fb", surface: "rgba(255, 255, 255, .72)", surface2: "rgba(255, 255, 255, .58)",
             text: "#0f172a", muted: "rgba(15, 23, 42, .62)", border: "rgba(15, 23, 42, .12)",
-            accent: "#2563eb", link: "#1d4ed8", code: "rgba(255, 255, 255, .5)", header: "rgba(255, 255, 255, .55)",
+            accent: "#2563eb", link: "#1d4ed8", code: "rgba(255, 255, 255, .6)", header: "rgba(255, 255, 255, .72)",
             btnBg: "#2563eb", btnText: "#ffffff", ring: "#2563eb",
-            "--glass-from": "#dbeafe", "--glass-via": "#c7d2fe", "--glass-to": "#bfdbfe",
-            "--glass-surface": "rgba(255, 255, 255, .55)",
-            "--glass-border": "rgba(15, 23, 42, .12)",
-            "--glass-input": "rgba(255, 255, 255, .72)",
+            // 浅色版要把渐变与磨砂做足，否则和普通浅色主题看不出区别
+            "--glass-from": "#c7d2fe", "--glass-via": "#a5b4fc", "--glass-to": "#93c5fd",
+            "--glass-surface": "rgba(255, 255, 255, .72)",
+            "--glass-border": "rgba(255, 255, 255, .85)",
+            "--glass-input": "rgba(255, 255, 255, .85)",
             "--glass-heading": "#0f172a",
             "--glass-placeholder": "rgba(15, 23, 42, .45)",
             "--glass-stars": "0"   /* 浅色底上星点看不见，直接关掉 */
