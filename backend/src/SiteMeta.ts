@@ -188,11 +188,18 @@ export class SiteMeta {
      */
     public static apply(html: string, env: NodeJS.ProcessEnv = process.env): string {
 
-        const configured = SiteMeta.normalizeLang(env[SiteMeta.ENV.lang]);
+        // SITE_LANG 的三种取值（与 .env.example 里的说明一致）：
+        //   zh / en                    → 就用这一套
+        //   auto（或 browser / detect）→ 跟随访客浏览器，静态 HTML 先取英文
+        //   不设置                     → 按已设置的语言变量推断（设了 SITE_NAME_ZH 之类就当中文）
+        const rawLang = String(env[SiteMeta.ENV.lang] === undefined ? "" : env[SiteMeta.ENV.lang]).trim();
 
-        // 静态 HTML 里生效的是哪一套语言值：SITE_LANG 指定语言优先；
-        // 没设就按已设置的语言变量推断（设了 SITE_NAME_ZH 就当中文），最后才退回英文
-        const staticLang = configured || SiteMeta.inferLang(env) || "en";
+        const configured = SiteMeta.normalizeLang(rawLang);
+
+        const explicitAuto = /^(auto|browser|detect)$/i.test(rawLang);
+
+        // 静态 HTML 里生效的是哪一套语言值，最后才退回英文
+        const staticLang = configured || (explicitAuto ? null : SiteMeta.inferLang(env)) || "en";
 
         // <html lang> 跟静态 HTML 实际用的那套语言保持一致（含推断出来的语言）
         html = html.replace(/(<html\b[^>]*\slang=")([^"]*)(")/i,

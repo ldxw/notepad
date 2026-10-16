@@ -31,6 +31,10 @@ on:
         description: "构建成功后创建 Release（发布说明 + 镜像地址 + 打包好的镜像 + SHA256SUMS）"
         type: boolean
         default: true
+      siteLang:
+        description: "预渲染（静态 HTML）用的界面语言：zh / en；留空则英文"
+        type: string
+        default: "en"
 
 # ghcr.io 用内置 GITHUB_TOKEN 推送；创建 Release 需要 contents: write
 permissions:
@@ -181,6 +185,8 @@ jobs:
         with:
           context: .
           file: Dockerfile
+          build-args: |
+            SITE_LANG=${{ inputs.siteLang }}
           platforms: ${{ env.PLATFORMS }}
           # 用 image exporter 取代 push: true，才能带上 oci-mediatypes=false：
           # 阿里云 ACR 只认 Docker manifest list，不认 OCI image index，否则报

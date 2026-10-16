@@ -8,9 +8,15 @@
  *
  * Chrome 的位置按顺序找：$CHROME_BIN → frontend/.chrome/chrome-headless-shell → 常见系统路径。
  * 找不到就跳过并提示（本地开发不必为了构建去装浏览器），找到就正常预渲染。
+ *
+ * 渲染用的界面语言取自 $SITE_LANG（构建参数）：前端选语言的优先级是
+ * localStorage → <meta name="default-locale"> → navigator.language，
+ * 无头环境里前两者都没有，不指定就会渲染成英文。这里在渲染用的临时副本里注入
+ * 一条带标记的 default-locale，渲染完再从产物里删掉 —— 镜像里的静态 HTML 是目标语言，
+ * 运行时的行为（容器里的 SITE_LANG / 访客浏览器语言）完全不变。
  */
 import {spawnSync} from "node:child_process";
-import {existsSync, readFileSync, writeFileSync} from "node:fs";
+import {existsSync, readFileSync, unlinkSync, writeFileSync} from "node:fs";
 import path from "node:path";
 import process from "node:process";
 
@@ -40,6 +46,27 @@ if (!existsSync(INDEX)) {
 
 const before = readFileSync(INDEX, "utf8").length;
 
+// 预渲染用的界面语言：SITE_LANG 以 zh / en 开头时生效，其余（没设、auto）保持原行为（无头浏览器默认）
+const wanted = String(process.env.SITE_LANG || "").trim().toLowerCase();
+
+const PRERENDER_LANG = wanted.startsWith("zh") ? "zh" : (wanted.startsWith("en") ? "en" : "");
+
+const MARKER = ' data-prerender-only=""';
+
+const RENDER_INDEX = PRERENDER_LANG ? path.resolve("dist", ".index.prerender.html") : INDEX;
+
+if (PRERENDER_LANG) {
+
+    const html = readFileSync(INDEX, "utf8");
+    const tag = `<meta name="default-locale" content="${PRERENDER_LANG}"${MARKER}>`;
+
+    writeFileSync(RENDER_INDEX, /<head[^>]*>/i.test(html)
+        ? html.replace(/(<head[^>]*>)/i, (match) => match + "\n    " + tag)
+        : html);
+
+    console.log(`[prerender] 按 SITE_LANG=${PRERENDER_LANG} 渲染`);
+}
+
 console.log(`[prerender] 使用 ${chrome}`);
 
 // --no-zygote / --single-process：多架构构建里 arm64 那条腿是 QEMU 模拟执行，
@@ -54,15 +81,24 @@ const result = spawnSync(chrome, [
     "--disable-software-rasterizer",
     "--disable-dev-shm-usage",
     "--hide-scrollbars",
+    ...(PRERENDER_LANG ? [`--lang=${PRERENDER_LANG === "zh" ? "zh-CN" : "en-US"}`] : []),
     "--virtual-time-budget=10000",
     "--dump-dom",
-    `file://${INDEX}`
+    `file://${RENDER_INDEX}`
 ], {encoding: "utf8", maxBuffer: 64 * 1024 * 1024});
 
 // dbus / 容器内的噪声日志不算错误
 const stderr = (result.stderr || "")
     .split("\n")
     .filter((line) => line && !/dbus|Failed to connect to the bus|DevTools listening|GCM|voice_transcription/i.test(line));
+
+if (PRERENDER_LANG && existsSync(RENDER_INDEX)) {
+    try {
+        unlinkSync(RENDER_INDEX);
+    } catch {
+        // 清理失败不影响结果
+    }
+}
 
 if (result.status !== 0 || !result.stdout || result.stdout.length < 200) {
     console.error("[prerender] 渲染失败，保留未预渲染的 index.html 供排查");
@@ -72,6 +108,12 @@ if (result.status !== 0 || !result.stdout || result.stdout.length < 200) {
     process.exit(1);
 }
 
-writeFileSync(INDEX, result.stdout);
+// 去掉只给预渲染用的那条 meta：产物里不留额外标记，运行时语言仍由容器环境决定
+const output = PRERENDER_LANG
+    ? result.stdout.replace(new RegExp('\\s*<meta name="default-locale" content="[^"]*"' + MARKER + '>'), "")
+    : result.stdout;
 
-console.log(`[prerender] 完成：dist/index.html ${before} → ${result.stdout.length} 字节`);
+writeFileSync(INDEX, output);
+
+console.log(`[prerender] 完成：dist/index.html ${before} → ${output.length} 字节`
+    + (PRERENDER_LANG ? `（界面语言 ${PRERENDER_LANG}）` : ""));

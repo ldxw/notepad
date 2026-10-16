@@ -42,6 +42,12 @@ ENV CHROME_BIN=/usr/local/bin/chrome-headless-shell
 
 COPY --from=builder /app/frontend ./frontend
 COPY ./frontend ./frontend
+
+# 预渲染（静态 HTML）用的界面语言：zh / en，不设则英文。
+# 只影响构建产物，运行时的语言仍由容器环境里的 SITE_LANG 决定。
+ARG SITE_LANG=
+ENV SITE_LANG=${SITE_LANG}
+
 RUN cd frontend && npm run build
 
 
