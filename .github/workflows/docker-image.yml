@@ -170,15 +170,13 @@ jobs:
           username: ${{ env.ALIYUN_DOCKER_USERNAME }}
           password: ${{ env.ALIYUN_DOCKER_TOKEN }}
 
-      - name: 🏷️ 生成镜像标签（latest + 时间）
+      - name: 🏷️ 生成镜像标签（theme + theme-时间）
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.images.outputs.list }}
           tags: |
-            type=raw,value=latest
-            type=raw,value={{date 'YYYY-MM-DD-HHmm' tz='Asia/Shanghai'}}
-            # 主题版本的镜像：固定 theme 标签 + 带时间的一个，便于直接拉取和回滚
+            # 只出主题版的两个标签：固定 theme + 带时间的一个，便于直接拉取与回滚
             type=raw,value=theme
             type=raw,value=theme-{{date 'YYYY-MM-DD-HHmm' tz='Asia/Shanghai'}}
 
@@ -223,7 +221,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          TAG="$(printf '%s\n' "${{ steps.meta.outputs.tags }}" | sed -E 's#^.*:##' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{4}$' | head -1 || true)"
+          TAG="$(printf '%s\n' "${{ steps.meta.outputs.tags }}" | sed -E 's#^.*:##' | sed -E 's/^theme-//' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{4}$' | head -1 || true)"
           if [ -z "$TAG" ]; then
             TAG="$(date -u -d '+8 hours' '+%Y-%m-%d-%H%M')"
           fi
@@ -270,8 +268,8 @@ jobs:
           CHANGELOG=/tmp/changelog.md
           PKG=/tmp/pkg
 
-          # Release 标签用镜像的时间标签（metadata-action 生成的、非 latest 的那个）
-          TAG="$(printf '%s\n' "${{ steps.meta.outputs.tags }}" | sed -E 's#^.*:##' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{4}$' | head -1 || true)"
+          # Release 标签用镜像的时间标签（从 theme-<时间> 里取出的那一段）
+          TAG="$(printf '%s\n' "${{ steps.meta.outputs.tags }}" | sed -E 's#^.*:##' | sed -E 's/^theme-//' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]{4}$' | head -1 || true)"
           if [ -z "$TAG" ]; then
             TAG="$(date -u -d '+8 hours' '+%Y-%m-%d-%H%M')"
           fi
@@ -304,7 +302,7 @@ jobs:
             echo
             echo "- **构建时间**：${BUILD_TIME}（北京时间 UTC+8）"
             echo "- **提交**：\`${SHA}\`"
-            echo "- **镜像标签**：\`latest\`、\`${TAG}\`、\`theme\`、\`theme-${TAG}\`"
+            echo "- **镜像标签**：\`theme\`、\`theme-${TAG}\`"
             echo "- **支持架构**：\`${PLATFORMS}\`（多架构 manifest list）"
             echo "- **文件校验**：请使用本次 Release 附带的 \`SHA256SUMS\` 校验下载下来的镜像包（\`sha256sum -c SHA256SUMS\`）"
             echo
@@ -317,8 +315,8 @@ jobs:
                 echo "**${label}**"
                 echo
                 echo '```'
-                echo "${img}:latest"
-                echo "${img}:${TAG}"
+                echo "${img}:theme"
+                echo "${img}:theme-${TAG}"
                 echo '```'
                 echo
               fi
@@ -354,7 +352,7 @@ jobs:
             echo
             echo '```bash'
             echo "# 直接用镜像"
-            echo "docker run -d --name notepad -p 3000:3000 -e TZ=Asia/Shanghai ${GHCR_IMG:-${HUB_IMG:-${ALI_IMG}}}:latest"
+            echo "docker run -d --name notepad -p 3000:3000 -e TZ=Asia/Shanghai ${GHCR_IMG:-${HUB_IMG:-${ALI_IMG}}}:theme"
             echo ""
             echo "# 或者用仓库里的 compose"
             echo "git clone https://github.com/$REPO.git && cd notepad && docker compose up -d"
