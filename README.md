@@ -200,7 +200,7 @@ To give first-time visitors a default theme, set two environment variables:
 | Variable | Values | Meaning |
 |---|---|---|
 | `SITE_THEME` | `auto` (default) / `light` / `dark` | brightness; `auto` follows the visitor's system |
-| `SITE_SKIN` | `classic` (default) / `paper` / `ocean` / `forest` / `grape` / `sunset` / `mono` / `neon` | the whole palette; `classic` is the original look |
+| `SITE_SKIN` | `classic` (default) / `paper` / `ocean` / `forest` / `grape` / `sunset` / `mono` / `neon` | the whole palette; `classic` is the default teal look |
 
 ```bash
 SITE_THEME="dark"

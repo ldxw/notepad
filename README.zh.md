@@ -192,7 +192,7 @@ docker run -d -p 3000:3000 \
 | 变量 | 取值 | 说明 |
 |---|---|---|
 | `SITE_THEME` | `auto`（默认）/ `light` / `dark` | 明暗模式，`auto` = 跟随访客系统 |
-| `SITE_SKIN` | `classic`（默认）/ `paper` / `ocean` / `forest` / `grape` / `sunset` / `mono` / `neon` | 整套配色；`classic` 就是本站现有外观 |
+| `SITE_SKIN` | `classic`（默认）/ `paper` / `ocean` / `forest` / `grape` / `sunset` / `mono` / `neon` | 整套配色；`classic` 是默认的 teal 配色 |
 
 ```bash
 SITE_THEME="dark"

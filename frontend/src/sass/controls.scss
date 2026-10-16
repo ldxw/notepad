@@ -1,15 +1,22 @@
 
 
 .btn {
-  background-color: var(--btn-bg); /* 令牌：classic 里是绿色，换主题时跟着走 */
+  background-color: var(--btn-bg); /* 令牌：classic 里是行动橙，换主题时跟着走 */
   border: none;
   color: var(--btn-text) !important;
-  padding: 0.5em 1.2em;
+  min-height: 2.75rem; /* 44px：触控目标的最小尺寸 */
+  padding: 0.5em 1.4em;
   text-align: center;
   text-decoration: none;
-  display: inline-block;
-  font-size: 1em;
-  border-radius: var(--radius, 0.3em);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  border-radius: var(--radius, 10px);
+  cursor: pointer;
+  transition: background-color .16s ease, transform .16s ease;
 
   text-transform: uppercase;
 }
@@ -19,23 +26,34 @@
   color: var(--btn-text);
 }
 
-textarea:focus, input:focus {
-  outline: none;
+.btn:active {
+  transform: translateY(1px);
 }
+
+// 焦点环统一由全局 :focus-visible 提供（见 app.scss），这里不再移除 outline ——
+// 去掉 outline 而不给替代方案，键盘用户就找不到自己在哪。
 
 textarea {
   width: 100%;
   height: 50vh;
 
-  font-family: "Courier New", serif;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+  font-size: 1rem;
+  line-height: 1.6;
 
-  padding: 12px 20px;
+  padding: 1rem 1.1rem;
   box-sizing: border-box;
-  border: 2px solid var(--border);
-  border-radius: var(--radius, 4px);
-  background-color: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 10px);
+  background-color: var(--surface);
   color: var(--text);
   resize: both;
+  transition: border-color .16s ease, box-shadow .16s ease;
+
+  &:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent);
+  }
 }
 
 input:disabled {

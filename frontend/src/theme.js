@@ -23,7 +23,7 @@ const META_MODE = "site-theme";
 const META_SKIN = "site-skin";
 
 /** 生成一套配色的全部令牌：只给关键色，其余按同一色系推出来，避免每套写十条 */
-function palette({bg, surface, surface2, text, muted, border, accent, link, code, header}) {
+function palette({bg, surface, surface2, text, muted, border, accent, link, code, header, btnBg, btnText, ring}) {
     return {
         "--bg": bg,
         "--surface": surface,
@@ -34,7 +34,11 @@ function palette({bg, surface, surface2, text, muted, border, accent, link, code
         "--accent": accent,
         "--link": link,
         "--code-bg": code,
-        "--header-bg": header
+        "--header-bg": header,
+        // 行动按钮与键盘焦点环：没单独给就跟着主色走
+        "--btn-bg": btnBg || accent,
+        "--btn-text": btnText || "#ffffff",
+        "--ring": ring || accent
     };
 }
 
@@ -49,14 +53,16 @@ export const skins = [
         id: "classic",
         labelKey: "skin.classic",
         light: palette({
-            bg: "#ffffff", surface: "#ffffff", surface2: "#f6f6f6", text: "#2c3e50",
-            muted: "#a3a1a1", border: "#aab7b8", accent: "#f42f42", link: "#0000ee",
-            code: "#f6f6f6", header: "cornsilk"
+            bg: "#f8fafb", surface: "#ffffff", surface2: "#f1f5f9", text: "#123b38",
+            muted: "#5b7080", border: "#dbe6e8", accent: "#0d9488", link: "#0d9488",
+            code: "#f1f5f9", header: "#ffffff",
+            btnBg: "#ea580c", btnText: "#000000", ring: "#0d9488"
         }),
         dark: palette({
-            bg: "#0f1115", surface: "#171a20", surface2: "#1e222a", text: "#e7e9ee",
-            muted: "#9aa1ad", border: "#2a2f39", accent: "#ff6b7a", link: "#7aa2ff",
-            code: "#1e222a", header: "#141821"
+            bg: "#0b1416", surface: "#101b1e", surface2: "#16262a", text: "#e6f2f1",
+            muted: "#8fa8ae", border: "#1e3135", accent: "#2dd4bf", link: "#2dd4bf",
+            code: "#16262a", header: "#0e191c",
+            btnBg: "#f97316", btnText: "#0b1416", ring: "#2dd4bf"
         })
     },
 
