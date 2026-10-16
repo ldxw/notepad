@@ -349,10 +349,10 @@ export class Server {
   }
   a:hover { color: red; }
   .wrap { max-width: 44rem; margin: 0 auto; padding: 2rem 1rem 0; }
-  h1 { font-size: 2rem; margin: 0 0 1rem; }
+  .wrap h1 { font-size: 2rem; margin: 0 0 0.5rem; text-align: center; }
   p { margin: 0 0 1rem; }
   .muted { color: #a3a1a1; }
-  .summary { color: #a3a1a1; font-size: 0.9rem; margin: 0; }
+  .summary { color: #a3a1a1; font-size: 0.9rem; margin: 0; text-align: center; }
   .notice {
     display: flex;
     align-items: flex-start;
@@ -431,6 +431,22 @@ export class Server {
   }
   footer { margin-top: 2.5rem; color: #a3a1a1; font-size: 0.8rem; line-height: 1.7; }
   footer code { background: transparent; padding: 0; }
+  /* 说明卡片：原来是裸露的一行行小字，改成居中的带框卡片 */
+  .notes {
+    max-width: 34rem;
+    margin: 2.5rem auto 0;
+    padding: 1.25rem 1.5rem;
+    background: #fafafa;
+    border: 1px solid #d8dede;
+    border-radius: 10px;
+    color: #6b6f76;
+    font-size: 0.85rem;
+    line-height: 1.8;
+    text-align: center;
+  }
+  .notes p { margin: 0; }
+  .notes p + p { margin-top: 0.6rem; }
+  .notes .muted { color: #a3a1a1; }
   /* 站点页脚（与首页同款，居中在正文宽度内） */
   .site-footer {
     max-width: 44rem;
@@ -636,26 +652,19 @@ ${inner}
 
   ${files.length ? `<div class="list">\n${cards}\n</div>` : empty}
 
-  <footer>
-    ${zh
-      ? `这里是本实例的加密笔记归档，${canDownload
-          ? "任何人都可以下载"
-          : "已关闭下载，仅列出清单"}。<br>
-         ${keepDays
-          ? `归档只保留最近 ${keepDays} 天，更早的会自动删除。`
-          : "归档不自动删除，全部保留。"}<br>
-         里面是加密后的笔记密文，没有对应口令无法解密；下载后解压，可以在另一个实例上继续使用这些笔记。<br>
-         时间为站点本地时间。`
-      : `Encrypted note archives of this instance${canDownload
-          ? " — anyone can download them"
-          : " — downloads are off, so this page only lists them"}.<br>
-         ${keepDays
-          ? `Only the last ${keepDays} day(s) are kept; older archives are removed automatically.`
-          : "Nothing is deleted automatically — every archive is kept."}<br>
-         They hold encrypted note blobs only, useless without the matching passphrase; unpack a
-         downloaded archive to carry the notes over to another instance.<br>
-         Times are the site's local time.`}
-  </footer>
+  ${zh
+      ? `<section class="notes">
+    <p>这里是本实例的加密笔记归档，${canDownload ? "任何人都可以下载" : "下载已关闭，仅列出清单"}。</p>
+    <p>${keepDays ? `归档只保留最近 ${keepDays} 天，更早的会自动删除。` : "归档不自动删除，全部保留。"}</p>
+    <p>里面是加密后的笔记密文，没有对应口令无法解密；下载后解压，可以在另一个实例上继续使用这些笔记。</p>
+    <p class="muted">时间为站点本地时间。</p>
+  </section>`
+      : `<section class="notes">
+    <p>Encrypted note archives of this instance${canDownload ? " — anyone can download them" : " — downloads are off, so this page only lists them"}.</p>
+    <p>${keepDays ? `Only the last ${keepDays} day(s) are kept; older archives are removed automatically.` : "Nothing is deleted automatically — every archive is kept."}</p>
+    <p>They hold encrypted note blobs only, useless without the matching passphrase; unpack a downloaded archive to carry the notes over to another instance.</p>
+    <p class="muted">Times are the site's local time.</p>
+  </section>`}
 `;
 
             res.set('Content-Type', 'text/html; charset=utf-8');
