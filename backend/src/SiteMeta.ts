@@ -50,6 +50,35 @@ export class SiteMeta {
         return base + "_" + lang.toUpperCase();
     }
 
+    /**
+     * SITE_LANG 未设置时的语言推断：看语言相关变量里实际设了哪一套。
+     * 设了任何 `_ZH` → zh；否则设了任何 `_EN` → en；都没设 → null（保持原行为）。
+     * 目的是让「已经设了 SITE_NAME_ZH 之类」的部署不必再单独补一行 SITE_LANG。
+     */
+    public static inferLang(env: NodeJS.ProcessEnv = process.env): string | null {
+
+        const bases = Object.keys(SiteMeta.I18N_ITEMS).map((key: string) => SiteMeta.I18N_ITEMS[key].env);
+
+        const hasSuffix = (suffix: string) => bases.some((base: string) => !!env[base + suffix]);
+
+        if (hasSuffix("_ZH")) {
+            return "zh";
+        }
+
+        if (hasSuffix("_EN")) {
+            return "en";
+        }
+
+        return null;
+    }
+
+    /** 标题没单独设时的兜底：退回同语言的站点名（再退到通用站点名），免得标题还是构建时的默认值 */
+    protected static titleFallback(env: NodeJS.ProcessEnv, lang: string): string | undefined {
+        return env[SiteMeta.envNameFor(SiteMeta.ENV.siteName, lang)]
+            || env[SiteMeta.ENV.siteName]
+            || undefined;
+    }
+
     /** 取某项在 lang 下的值：优先 SITE_X_ZH / SITE_X_EN，其次通用 SITE_X，都没有则 undefined */
     public static valueFor(env: NodeJS.ProcessEnv, base: string, lang: string): string | undefined {
         return env[SiteMeta.envNameFor(base, lang)] || env[base] || undefined;
@@ -161,18 +190,20 @@ export class SiteMeta {
 
         const configured = SiteMeta.normalizeLang(env[SiteMeta.ENV.lang]);
 
-        // 静态 HTML 里生效的是哪一套语言值：SITE_LANG 指定语言优先，没设就英文
-        const staticLang = configured || "en";
+        // 静态 HTML 里生效的是哪一套语言值：SITE_LANG 指定语言优先；
+        // 没设就按已设置的语言变量推断（设了 SITE_NAME_ZH 就当中文），最后才退回英文
+        const staticLang = configured || SiteMeta.inferLang(env) || "en";
+
+        // <html lang> 跟静态 HTML 实际用的那套语言保持一致（含推断出来的语言）
+        html = html.replace(/(<html\b[^>]*\slang=")([^"]*)(")/i,
+            (_match: string, open: string, _old: string, close: string) => {
+                return open + (staticLang === "zh" ? "zh-CN" : staticLang) + close;
+            });
 
         if (configured) {
 
-            // <html lang> 与实际默认语言保持一致
-            html = html.replace(/(<html\b[^>]*\slang=")([^"]*)(")/i,
-                (_match: string, open: string, _old: string, close: string) => {
-                    return open + (configured === "zh" ? "zh-CN" : configured) + close;
-                });
-
-            // 前端 i18n 靠这个 meta 决定默认语言（localStorage 里的用户选择优先）
+            // 前端 i18n 靠这个 meta 决定默认语言（localStorage 里的用户选择优先）；
+            // 只在显式设了 SITE_LANG 时才写，没设就保持"跟随浏览器"的自动行为
             html = SiteMeta.setMeta(html, "default-locale", configured);
         }
 
@@ -184,14 +215,17 @@ export class SiteMeta {
 
             SiteMeta.LANGS.forEach((one: string) => {
 
-                const value = env[SiteMeta.envNameFor(item.env, one)] || base;
+                // 标题没单独设时退回同语言的站点名，免得中文站点顶上还挂着构建时的默认标题
+                const value = env[SiteMeta.envNameFor(item.env, one)] || base
+                    || (item.meta === "site-title" ? SiteMeta.titleFallback(env, one) : undefined);
 
                 if (value) {
                     html = SiteMeta.setMeta(html, item.meta + "-" + one, value);
                 }
             });
 
-            const staticValue = SiteMeta.valueFor(env, item.env, staticLang);
+            const staticValue = SiteMeta.valueFor(env, item.env, staticLang)
+                || (item.meta === "site-title" ? SiteMeta.titleFallback(env, staticLang) : undefined);
 
             if (!staticValue) {
                 return;
