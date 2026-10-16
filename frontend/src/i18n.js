@@ -32,6 +32,7 @@ export const messages = {
         "skin.neon": "Neon",
         "skin.bento": "Bento",
         "skin.glass": "Glass",
+        "skin.fluid": "Fluid",
 
         "home.loginTitle": "🔑 Login with a unique passphrase",
         "home.phrasePlaceholder": "e.g: correct horse battery staple",
@@ -116,6 +117,7 @@ export const messages = {
         "skin.neon": "霓虹",
         "skin.bento": "磁贴",
         "skin.glass": "玻璃",
+        "skin.fluid": "自适应",
 
         "home.loginTitle": "🔑 用一句独一无二的口令登录",
         "home.phrasePlaceholder": "例如：正确的马 电池 订书钉",

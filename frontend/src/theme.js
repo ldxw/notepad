@@ -16,6 +16,7 @@
 // 会改布局的主题：各自一个模块（自己的 CSS + 可选的行为），在这里登记
 import {onApply as bentoOnApply} from "./themes/bento";
 import {onApply as glassOnApply} from "./themes/glass";
+import {onApply as fluidOnApply} from "./themes/fluid";
 
 export const DEFAULT_MODE = "auto";
 export const DEFAULT_SKIN = "classic";
@@ -243,13 +244,33 @@ export const skins = [
             "--glass-placeholder": "rgba(255, 255, 255, .55)",
             "--glass-stars": "1"
         })
+    },
+
+    {
+        // 自适应：流体排版 + 手机贴底抽屉 + 安全区 + 真实视口高度。
+        // 结构样式在 themes/fluid.css，视口高度由 themes/fluid.js 写入 --app-vh。
+        id: "fluid",
+        labelKey: "skin.fluid",
+        light: palette({
+            bg: "#fbfbfd", surface: "#ffffff", surface2: "#f4f4f7", text: "#111827",
+            muted: "#6b7280", border: "#e5e7eb", accent: "#e11d48", link: "#be123c",
+            code: "#f4f4f7", header: "#ffffff",
+            btnBg: "#e11d48", btnText: "#ffffff", ring: "#e11d48"
+        }),
+        dark: palette({
+            bg: "#0c0d10", surface: "#14161a", surface2: "#1b1e24", text: "#e9eaee",
+            muted: "#9aa1ad", border: "#262a32", accent: "#fb7185", link: "#fda4af",
+            code: "#1b1e24", header: "#101216",
+            btnBg: "#f43f5e", btnText: "#ffffff", ring: "#fb7185"
+        })
     }
 ];
 
 /** 主题自带的行为：applyTheme() 每次都会调用当前主题的钩子 */
 const THEME_HOOKS = {
     bento: bentoOnApply,
-    glass: glassOnApply
+    glass: glassOnApply,
+    fluid: fluidOnApply
 };
 
 const CLASSIC = skins[0];

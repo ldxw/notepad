@@ -1,0 +1,119 @@
+/**
+ * Fluid 主题：自适应用户体验（缩放到哪、屏多大都合适）。
+ *
+ * 与其它主题的区别在于"适配"本身是主角：
+ *   · 流体排版：字号 / 间距用 clamp() 随视口伸缩，而不是断点跳变
+ *   · 手机（≤640px）：主题面板从浮层改成贴底抽屉、页头换行、点按区加高
+ *   · 安全区：配合 env(safe-area-inset-*)，刘海屏 / 圆角屏不顶格
+ *   · 编辑区高度用 JS 写入的 --app-vh（见 fluid.js），避开 iOS 上 100vh 不准的问题
+ */
+
+html[data-skin="fluid"] {
+
+    /* ---- 流体排版：在范围内连续伸缩 ---- */
+    body {
+        font-size: clamp(15px, 0.5vw + 13.4px, 17px);
+        line-height: 1.62;
+    }
+
+    h1 {
+        font-size: clamp(1.5rem, 1.1vw + 1.05rem, 2rem);
+    }
+
+    /* ---- 安全区：刘海 / 圆角屏留出边距 ---- */
+    .header {
+        padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+        padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+    }
+
+    #app {
+        padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* ---- 间距随视口伸缩 ---- */
+    .login-box {
+        margin: clamp(1.5rem, 6vh, 4rem) auto clamp(1.5rem, 5vh, 3rem) !important;
+    }
+
+    .notes-root {
+        max-width: min(60rem, 100%);
+    }
+
+    .note-card {
+        margin-top: clamp(0.9rem, 2vh, 1.5rem);
+        padding: clamp(1.1rem, 2.2vw, 1.75rem) clamp(1.15rem, 2.6vw, 1.9rem);
+    }
+
+    .site-footer {
+        max-width: min(60rem, 100%);
+        margin-top: clamp(2rem, 6vh, 3.5rem);
+    }
+
+    /* ---- 编辑区：用真实视口高度算，键盘弹出时也不会把按钮挤没 ---- */
+    textarea {
+        height: calc(var(--app-vh, 100vh) * 0.6);
+        min-height: 14rem;
+        box-sizing: border-box;
+    }
+
+    /* ---- 窄屏：页头换行、点按区加高、面板改贴底抽屉 ---- */
+    @media (max-width: 640px) {
+
+        .header {
+            flex-wrap: wrap;
+            row-gap: 0.4rem;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+        }
+
+        .seg-btn,
+        .lang-btn {
+            min-height: 2.5rem;   /* 40px+，手指点得中 */
+            padding: 0 0.7rem;
+        }
+
+        /* 浮层式面板在窄屏容易顶到边缘，改成贴底抽屉更顺手 */
+        .theme-panel {
+            position: fixed;
+            left: 0.5rem;
+            right: 0.5rem;
+            bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+            top: auto;
+            width: auto;
+            max-height: min(72vh, 34rem);
+            border-radius: 20px;
+        }
+
+        .theme-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .note-card {
+            border-radius: 14px;
+        }
+
+        /* 正文在窄屏不需要那么宽的留白 */
+        .login-box input[type=text],
+        #phrase {
+            font-size: 1.15em;
+        }
+    }
+
+    /* ---- 大屏：别把内容拉得太散 ---- */
+    @media (min-width: 1200px) {
+        .notes-root {
+            max-width: 64rem;
+        }
+
+        .note-card {
+            padding: 1.9rem 2.2rem;
+        }
+    }
+}
+
+/* 系统要求减少动效时不加多余过渡 */
+@media (prefers-reduced-motion: reduce) {
+    html[data-skin="fluid"] .theme-panel {
+        transition: none;
+    }
+}
