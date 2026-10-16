@@ -129,6 +129,7 @@ html[data-skin="bento"] {
             border: 1px solid var(--border);
             border-radius: 14px;
             font-size: 0.9rem;
+            text-align: left;
         }
 
         .login-box > p {
@@ -138,6 +139,7 @@ html[data-skin="bento"] {
             background: var(--surface-2);
             border: 1px solid var(--border);
             border-radius: 14px;
+            text-align: left;
         }
     }
 

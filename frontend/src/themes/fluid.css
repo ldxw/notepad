@@ -52,6 +52,7 @@ html[data-skin="fluid"] {
     /* ---- 首屏：左对齐、更宽的输入，做成"应用式"而不是居中式 ---- */
     .login-box {
         max-width: min(46rem, 100%) !important;
+        text-align: left;
     }
 
     .login-box > h1 {

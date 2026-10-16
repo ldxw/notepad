@@ -457,9 +457,11 @@ nav.nav-links {
 }
 
 // 首页登录区（原来是行内样式；抽成类之后主题可以按需调整）
+// 说明文字与统计行跟着输入框一起居中（会左对齐的主题各自覆盖）
 .login-box {
   max-width: 700px;
   margin: 3em auto;
+  text-align: center;
 }
 
 // 首页说明卡片：与 /backups/ 的说明卡片同一套观感（浅底、细边框、居中）
