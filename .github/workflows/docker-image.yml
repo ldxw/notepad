@@ -162,15 +162,18 @@ jobs:
           username: ${{ env.ALIYUN_DOCKER_USERNAME }}
           password: ${{ env.ALIYUN_DOCKER_TOKEN }}
 
-      - name: 🏷️ 生成镜像标签（theme + theme-时间）
+      - name: 🏷️ 生成镜像标签（按分支区分）
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ steps.images.outputs.list }}
           tags: |
-            # 只出主题版的两个标签：固定 theme + 带时间的一个，便于直接拉取与回滚
-            type=raw,value=theme
-            type=raw,value=theme-{{date 'YYYY-MM-DD-HHmm' tz='Asia/Shanghai'}}
+            # upstream-latest 走常规：latest + 时间标签
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/upstream-latest' }}
+            type=raw,value={{date 'YYYY-MM-DD-HHmm' tz='Asia/Shanghai'}},enable=${{ github.ref == 'refs/heads/upstream-latest' }}
+            # 其它分支（主题开发）用 theme 这一组，便于和主线区分、可回滚
+            type=raw,value=theme,enable=${{ github.ref != 'refs/heads/upstream-latest' }}
+            type=raw,value=theme-{{date 'YYYY-MM-DD-HHmm' tz='Asia/Shanghai'}},enable=${{ github.ref != 'refs/heads/upstream-latest' }}
 
       - name: 🚀 构建并推送多架构镜像
         id: build
