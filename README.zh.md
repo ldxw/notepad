@@ -182,6 +182,30 @@ docker run -d -p 3000:3000 \
 站点图标同理：`SITE_ICON` 填完整 URL 或 `/my.ico` 这样的路径即可替换内置的 `favicon.ico`；
 留空则继续用默认图标。
 
+### 界面主题
+
+页头右上角有主题控件，和语言切换并排：三个图标切换**明暗**（跟随系统 / 浅色 / 深色），
+调色板图标展开**整套配色**选择。两轴独立，可以任意组合。
+
+想给**第一次来的访客**一个默认主题，用两个环境变量：
+
+| 变量 | 取值 | 说明 |
+|---|---|---|
+| `SITE_THEME` | `auto`（默认）/ `light` / `dark` | 明暗模式，`auto` = 跟随访客系统 |
+| `SITE_SKIN` | `classic`（默认）/ `paper` / `ocean` / `forest` / `grape` / `sunset` / `mono` / `neon` | 整套配色；`classic` 就是本站现有外观 |
+
+```bash
+SITE_THEME="dark"
+SITE_SKIN="paper"
+```
+
+它们以 `<meta name="site-theme">` / `site-skin` 注入，只对**还没自己选过**的访客生效 ——
+访客在页头选过的记在浏览器里，优先级更高。名字写错只会退回默认主题（后端只校验格式，
+名单在前端），不会渲染出没样式的页面。
+
+配色数据在 `frontend/src/theme.js` 的 `skins` 数组里，想加第 9 套主题就加一条记录
+（`id` + 中英标签 + 明暗两套令牌），选择面板、预览色块和 `SITE_SKIN` 会自动认得它。
+
 ### 中英两套值
 
 `SITE_TITLE`、`SITE_DESCRIPTION`、`SITE_KEYWORDS`、`SITE_NAME` 都支持 `_ZH` / `_EN` 后缀，

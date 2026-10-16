@@ -31,8 +31,29 @@ export class SiteMeta {
         lang: "SITE_LANG",
         salt: "SITE_SALT",
         siteName: "SITE_NAME",
-        icon: "SITE_ICON"
+        icon: "SITE_ICON",
+        theme: "SITE_THEME",
+        skin: "SITE_SKIN"
     };
+
+    /**
+     * 首帧引导脚本：在 <head> 里、任何样式与打包脚本之前把主题属性定好。
+     *
+     * 静态 HTML 是构建时渲染的，带着构建机的默认主题；访客自己的选择存在 localStorage 里。
+     * 不在最前面读出来，刷新时就会先闪一下默认主题再切过去。
+     *
+     * 这里只设属性（data-theme / data-skin），具体调色板令牌由前端的主题模块在挂载前写入
+     * —— 调色板只有前端一份数据，不在这里重复一份。
+     */
+    protected static readonly THEME_BOOT_SCRIPT = '<script>(function(){try{'
+        + 'var d=document.documentElement,h=document.head;'
+        + 'var m="",s="";'
+        + 'try{m=localStorage.getItem("theme")||"";s=localStorage.getItem("skin")||"";}catch(e){}'
+        + 'if(!m){var a=h.querySelector(\'meta[name="site-theme"]\');m=a?(a.getAttribute("content")||""):"";}'
+        + 'if(!s){var b=h.querySelector(\'meta[name="site-skin"]\');s=b?(b.getAttribute("content")||""):"";}'
+        + 'd.setAttribute("data-theme",m||"auto");'
+        + 'if(s){d.setAttribute("data-skin",s);}'
+        + '}catch(e){}})();</script>';
 
     /** 支持 _ZH / _EN 后缀的项：环境变量基础名 → 注入给前端的 meta 名前缀 */
     public static readonly I18N_ITEMS: {[key: string]: {env: string, meta: string}} = {
@@ -293,6 +314,35 @@ export class SiteMeta {
         if (icon) {
             html = SiteMeta.setIcon(html, icon);
         }
+
+        // ---------- 主题（与语言无关）----------
+        // 后端只校验格式；皮肤名单在前端（theme.js），前端会用它做成员校验，
+        // 写错名字就退回默认皮肤，而不是渲染出一个没样式的页面。
+        const themeMode = String(env[SiteMeta.ENV.theme] || "").trim().toLowerCase();
+
+        if (themeMode) {
+            if (/^(auto|light|dark)$/.test(themeMode)) {
+                html = SiteMeta.setMeta(html, "site-theme", themeMode);
+            } else {
+                console.warn(`[meta] SITE_THEME="${themeMode}" 不是 auto / light / dark，已忽略`);
+            }
+        }
+
+        const themeSkin = String(env[SiteMeta.ENV.skin] || "").trim().toLowerCase();
+
+        if (themeSkin) {
+            if (/^[a-z0-9-]+$/.test(themeSkin)) {
+                html = SiteMeta.setMeta(html, "site-skin", themeSkin);
+            } else {
+                console.warn(`[meta] SITE_SKIN="${themeSkin}" 格式不合法（只允许小写字母、数字和连字符），已忽略`);
+            }
+        }
+
+        // 引导脚本放在 </head> 之前：此时上面的 site-theme / site-skin 已经注入，
+        // 脚本能读到它们；而打包脚本和样式还没执行，所以首帧就是正确的主题。
+        html = html.replace(/(<\/head>)/i, (_match: string, close: string) => {
+            return "    " + SiteMeta.THEME_BOOT_SCRIPT + "\n" + close;
+        });
 
         return html;
     }

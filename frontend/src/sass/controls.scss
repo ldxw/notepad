@@ -1,22 +1,22 @@
 
 
 .btn {
-  background-color: #4CAF50; /* Green */
+  background-color: var(--btn-bg); /* 令牌：classic 里是绿色，换主题时跟着走 */
   border: none;
-  color: white !important;
+  color: var(--btn-text) !important;
   padding: 0.5em 1.2em;
   text-align: center;
   text-decoration: none;
   display: inline-block;
   font-size: 1em;
-  border-radius: 0.3em;
+  border-radius: var(--radius, 0.3em);
 
   text-transform: uppercase;
 }
 
 .btn:hover {
-  background-color: #439946;
-  color: white;
+  background-color: color-mix(in srgb, var(--btn-bg) 88%, black);
+  color: var(--btn-text);
 }
 
 textarea:focus, input:focus {
@@ -31,13 +31,15 @@ textarea {
 
   padding: 12px 20px;
   box-sizing: border-box;
-  border: 2px solid #ccc;
-  border-radius: 4px;
-  background-color: #f8f8f8;
+  border: 2px solid var(--border);
+  border-radius: var(--radius, 4px);
+  background-color: var(--surface-2);
+  color: var(--text);
   resize: both;
 }
 
 input:disabled {
-  background-color: #e9ecef;
+  background-color: var(--surface-2);
+  color: var(--muted);
   opacity: 1;
 }

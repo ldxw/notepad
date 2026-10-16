@@ -189,6 +189,33 @@ empty keeps the build-time default, and the boot log lists what was overridden.
 The favicon follows the same rule: set `SITE_ICON` to a URL or a path (`/my.ico`) to replace the
 built-in `favicon.ico`; leave it empty to keep the default icon.
 
+### UI themes
+
+The header carries theme controls next to the language switcher: three icons switch the **mode**
+(follow system / light / dark), and the palette icon opens the **skin** picker. The two axes are
+independent and combine freely.
+
+To give first-time visitors a default theme, set two environment variables:
+
+| Variable | Values | Meaning |
+|---|---|---|
+| `SITE_THEME` | `auto` (default) / `light` / `dark` | brightness; `auto` follows the visitor's system |
+| `SITE_SKIN` | `classic` (default) / `paper` / `ocean` / `forest` / `grape` / `sunset` / `mono` / `neon` | the whole palette; `classic` is the original look |
+
+```bash
+SITE_THEME="dark"
+SITE_SKIN="paper"
+```
+
+They are injected as `<meta name="site-theme">` / `site-skin` and apply only to visitors who have
+not picked a theme themselves — a visitor's own choice is stored in the browser and wins. An
+unknown name falls back to the default theme (the backend validates the format only; the list
+lives in the frontend), so a typo never renders an unstyled page.
+
+The palettes are data in the `skins` array of `frontend/src/theme.js`. Adding a ninth theme is one
+entry there (`id`, a label in every locale, and a light + dark token set) — the picker, the
+preview swatches and `SITE_SKIN` pick it up automatically.
+
 ### Per-language values
 
 `SITE_TITLE`, `SITE_DESCRIPTION`, `SITE_KEYWORDS` and `SITE_NAME` all accept a `_ZH` / `_EN` suffix,

@@ -29,6 +29,10 @@ services:
       SITE_SALT: ${SITE_SALT}
       # 站点图标：填完整 URL 或 /my.ico 这样的路径；留空用内置的 favicon.ico
       SITE_ICON: ${SITE_ICON}
+
+      # 界面主题（两轴）：SITE_THEME = auto/light/dark，SITE_SKIN = classic/paper/ocean/...
+      SITE_THEME: ${SITE_THEME}
+      SITE_SKIN: ${SITE_SKIN}
       # ── 容器内定时归档（backend/bin/archive.sh）────────────────────────────
       # 容器时区：cron 的小时数按这个时区计算（默认 UTC 会导致时间不对）
       TZ: ${TZ:-Asia/Shanghai}
