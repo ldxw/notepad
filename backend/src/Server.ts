@@ -107,8 +107,8 @@ export class Server {
                 const body = `
   <h1>403</h1>
   <p>${zh
-      ? "本实例已关闭归档下载（<code>BACKUPS_DOWNLOAD=off</code>）。"
-      : "Backup downloads are disabled on this instance (<code>BACKUPS_DOWNLOAD=off</code>)."}</p>
+      ? "本实例已关闭归档下载。"
+      : "Backup downloads are disabled on this instance."}</p>
   <p class="muted">${zh
       ? `文件清单仍然可以在 <a href="/backups/">/backups/</a> 查看。`
       : `The listing is still available at <a href="/backups/">/backups/</a>.`}</p>
