@@ -200,7 +200,7 @@ To give first-time visitors a default theme, set two environment variables:
 | Variable | Values | Meaning |
 |---|---|---|
 | `SITE_THEME` | `auto` (default) / `light` / `dark` | brightness; `auto` follows the visitor's system |
-| `SITE_SKIN` | `classic` (default) / `paper` / `ocean` / `forest` / `grape` / `sunset` / `mono` / `neon` / `bento` / `glass` / `fluid` | the whole palette; `classic` is the default teal look, `bento` changes the layout, `glass` is glassmorphism, `fluid` adapts to the viewport |
+| `SITE_SKIN` | `classic` (default, modern teal) / `original` (upstream look) / `paper` / `ocean` / `forest` / `grape` / `sunset` / `mono` / `neon` / `bento` / `glass` / `fluid` | the whole palette; `bento` changes the layout, `glass` is glassmorphism, `fluid` adapts to the viewport. **The home page, the backups page and the 403 page all follow it** |
 
 ```bash
 SITE_THEME="dark"

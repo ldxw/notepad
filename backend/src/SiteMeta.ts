@@ -55,6 +55,45 @@ export class SiteMeta {
         + 'if(s){d.setAttribute("data-skin",s);}'
         + '}catch(e){}})();</script>';
 
+    /** 引导脚本（服务端渲染页 /backups/、403 也要在首帧前定好主题属性，所以公开出来） */
+    public static themeBootScript(): string {
+        return SiteMeta.THEME_BOOT_SCRIPT;
+    }
+
+    /**
+     * 注入主题相关的 meta（site-theme / site-skin）与 color-scheme。
+     * 后端只校验格式；皮肤名单在前端（theme.js），写错名字前端会退回默认皮肤，
+     * 而不是渲染出一个没样式的页面。
+     * 首页由 apply() 调用；服务端渲染页（/backups/、403）由 Server.pageShell() 调用。
+     */
+    public static applyThemeMeta(html: string, env: NodeJS.ProcessEnv = process.env): string {
+
+        const themeMode = String(env[SiteMeta.ENV.theme] === undefined ? "" : env[SiteMeta.ENV.theme]).trim().toLowerCase();
+
+        if (themeMode) {
+            if (/^(auto|light|dark)$/.test(themeMode)) {
+                html = SiteMeta.setMeta(html, "site-theme", themeMode);
+            } else {
+                console.warn(`[meta] SITE_THEME="${themeMode}" 不是 auto / light / dark，已忽略`);
+            }
+        }
+
+        const themeSkin = String(env[SiteMeta.ENV.skin] === undefined ? "" : env[SiteMeta.ENV.skin]).trim().toLowerCase();
+
+        if (themeSkin) {
+            if (/^[a-z0-9-]+$/.test(themeSkin)) {
+                html = SiteMeta.setMeta(html, "site-skin", themeSkin);
+            } else {
+                console.warn(`[meta] SITE_SKIN="${themeSkin}" 格式不合法（只允许小写字母、数字和连字符），已忽略`);
+            }
+        }
+
+        // 让原生滚动条 / 表单控件跟着主题走
+        html = SiteMeta.setMeta(html, "color-scheme", "light dark");
+
+        return html;
+    }
+
     /** 支持 _ZH / _EN 后缀的项：环境变量基础名 → 注入给前端的 meta 名前缀 */
     public static readonly I18N_ITEMS: {[key: string]: {env: string, meta: string}} = {
         siteName: {env: "SITE_NAME", meta: "site-name"},
@@ -316,27 +355,7 @@ export class SiteMeta {
         }
 
         // ---------- 主题（与语言无关）----------
-        // 后端只校验格式；皮肤名单在前端（theme.js），前端会用它做成员校验，
-        // 写错名字就退回默认皮肤，而不是渲染出一个没样式的页面。
-        const themeMode = String(env[SiteMeta.ENV.theme] || "").trim().toLowerCase();
-
-        if (themeMode) {
-            if (/^(auto|light|dark)$/.test(themeMode)) {
-                html = SiteMeta.setMeta(html, "site-theme", themeMode);
-            } else {
-                console.warn(`[meta] SITE_THEME="${themeMode}" 不是 auto / light / dark，已忽略`);
-            }
-        }
-
-        const themeSkin = String(env[SiteMeta.ENV.skin] || "").trim().toLowerCase();
-
-        if (themeSkin) {
-            if (/^[a-z0-9-]+$/.test(themeSkin)) {
-                html = SiteMeta.setMeta(html, "site-skin", themeSkin);
-            } else {
-                console.warn(`[meta] SITE_SKIN="${themeSkin}" 格式不合法（只允许小写字母、数字和连字符），已忽略`);
-            }
-        }
+        html = SiteMeta.applyThemeMeta(html, env);
 
         // 引导脚本放在 </head> 之前：此时上面的 site-theme / site-skin 已经注入，
         // 脚本能读到它们；而打包脚本和样式还没执行，所以首帧就是正确的主题。

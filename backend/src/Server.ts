@@ -1,4 +1,5 @@
 import {Application, NextFunction, Request, Response, Router} from "express";
+import fs from "fs";
 import path from "path";
 
 import {SiteMeta} from "./SiteMeta";
@@ -52,6 +53,9 @@ export class Server {
         // 运行时的页面元信息：容器启动时用 SITE_* 环境变量覆盖 index.html 里构建时的默认值。
         // 必须在 express.static 之前注册，否则会被静态中间件先接管。
         const indexHtml = SiteMeta.loadIndexHtml(parentPublic);
+
+        // 服务端渲染页（/backups/、403）也要跟随主题：把构建期导出的调色板算成样式，只算一次
+        Server.themeCss = Server.buildThemeCss(parentPublic);
 
         // 预渲染时如果为每种语言各渲染了一份（index.zh.html / index.en.html），
         // 这里按访客的 Accept-Language 挑对应那份 —— 中英访客首屏就是自己的语言，不用等前端切。
@@ -547,6 +551,84 @@ export class Server {
 `;
     }
 
+    /** 服务端渲染页用的主题样式（启用静态资源时算一次） */
+    protected static themeCss = "";
+
+    /**
+     * 服务端渲染页的主题样式，启动时算一次（enableStatic 里调用）。
+     *
+     * 首页是 JS 把令牌写成 <html> 的内联变量；这两张页面没有打包脚本，
+     * 所以改成把 themes.json 里每套皮肤写成属性选择器的令牌块，
+     * 再由 head 里的引导脚本定好 data-theme / data-skin —— 首帧就是对的主题。
+     * 数据来自构建期从 frontend/src/theme.js 导出的 dist/themes.json（只有这一份）。
+     */
+    protected static buildThemeCss(publicDir: string): string {
+
+        let data: {skins?: Array<{id: string, light: any, dark: any}>};
+
+        try {
+            data = JSON.parse(fs.readFileSync(path.join(publicDir, "themes.json"), "utf-8"));
+        } catch (ex) {
+            console.warn("[theme] 没读到 themes.json（服务端页只用手写兜底色）");
+            return "";
+        }
+
+        const skins = (data.skins || []).filter((one) => one && one.id);
+
+        if (!skins.length) {
+            return "";
+        }
+
+        const vars = (tokens: any) => Object.keys(tokens || {}).map((k) => `    ${k}: ${tokens[k]};`).join("\n");
+
+        const classic = skins.find((one) => one.id === "classic") || skins[0];
+
+        const out: string[] = [];
+
+        // 没设 data-skin 时也要有一套可用令牌（classic）
+        out.push(`  :root {\n${vars(classic.light)}\n  }`);
+        out.push(`  html[data-theme="dark"] {\n${vars(classic.dark)}\n  }`);
+        out.push(`  @media (prefers-color-scheme: dark) {\n    html[data-theme="auto"] {\n${vars(classic.dark)}\n    }\n  }`);
+
+        // 每套皮肤一份（浅色 / 显式深色 / 跟随系统的深色）
+        skins.forEach((one) => {
+            out.push(`  html[data-skin="${one.id}"] {\n${vars(one.light)}\n  }`);
+            out.push(`  html[data-skin="${one.id}"][data-theme="dark"] {\n${vars(one.dark)}\n  }`);
+            out.push(`  @media (prefers-color-scheme: dark) {\n    html[data-skin="${one.id}"][data-theme="auto"] {\n${vars(one.dark)}\n    }\n  }`);
+        });
+
+        // 把上面 pageCss 里写死的颜色接回令牌（同选择器、写在后面，所以优先级够）
+        out.push(`  body { background: var(--bg); color: var(--text); font-family: var(--font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif); }
+  .site-header { background-color: var(--header-bg); border-bottom-color: var(--border); }
+  .site-header .brand { color: var(--accent); }
+  .page-icon { color: var(--accent); }
+  a, a:visited, a:active, .dl { color: var(--link); }
+  a:hover { color: var(--accent); }
+  .muted, .summary, .sub, .file-icon, .dl.off, .notes .muted { color: var(--muted); }
+  .site-footer, .site-footer a { color: var(--muted); }
+  .site-footer { border-top-color: var(--border); }
+  .site-footer a:hover { color: var(--accent); }
+  .notice { background: var(--header-bg); border-color: var(--border); border-radius: var(--radius, 6px); }
+  .notice svg { color: var(--muted); }
+  .card { background: var(--surface); border-color: var(--border); border-radius: var(--radius, 6px); }
+  .card:hover { border-color: var(--accent); }
+  .card:hover .dl { color: var(--accent); }
+  .card.static:hover { border-color: var(--border); }
+  .card:focus-visible { outline-color: var(--ring, currentColor); }
+  .badge { color: var(--accent); }
+  .empty { background: var(--surface); border-color: var(--border); border-radius: var(--radius, 6px); }
+  pre, code { background: var(--code-bg); }
+  pre { border-color: var(--border); border-radius: var(--radius, 4px); }
+  .notes { background: var(--surface-2); border-color: var(--border); color: var(--text); border-radius: var(--radius, 10px); }
+  .lang-switch { border-color: var(--border); border-radius: var(--radius, 4px); background-color: color-mix(in srgb, var(--surface) 60%, transparent); }
+  .lang-switch .lang-btn { color: var(--text); }
+  .lang-switch .lang-btn + .lang-btn { border-left-color: var(--border); }
+  .lang-switch a.lang-btn:hover { background-color: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); }
+  .lang-switch .lang-btn.active { background-color: color-mix(in srgb, var(--text) 16%, transparent); }`);
+
+        return "  <style>\n" + out.join("\n") + "\n  </style>";
+    }
+
     /**
      * 套上站点页头，拼出完整 HTML（/backups/ 列表页与 403 页共用）。
      * 页头刻意与首页一致：左边站名、中间标语、右边 GitHub 链接 + 语言切换；
@@ -561,7 +643,7 @@ export class Server {
 
         const here = Server.escapeHtml(basePath || "/");
 
-        return `<!DOCTYPE html>
+        let html = `<!DOCTYPE html>
 <html lang="${zh ? "zh-CN" : "en"}">
 <head>
 <meta charset="utf-8">
@@ -570,10 +652,11 @@ export class Server {
 <title>${Server.escapeHtml(title)}</title>
 <style>
 ${Server.pageCss()}</style>
+${Server.themeCss}
 </head>
 <body>
 <div class="site-header">
-  <h1><span class="page-icon">📃</span><a class="brand" href="/">${Server.siteNameFor(zh)}</a></h1>
+  <h1><span class="page-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1.05em;height:1.05em;vertical-align:-0.15em"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></span><a class="brand" href="/">${Server.siteNameFor(zh)}</a></h1>
   <div class="banner"><h3>${Server.headerBanner(zh)}</h3></div>
   <div class="right">
     <nav class="nav-links"><a href="https://github.com/Athlon1600/notepad" target="_blank" rel="nofollow noopener noreferrer">${zh ? "GitHub 仓库" : "GitHub Repo"}</a></nav>
@@ -585,10 +668,20 @@ ${body}
 </div>
 <footer class="site-footer">
   <p>${Server.footerText(zh)}</p>
-</footer>
-</body>
-</html>`;
-    }
+  </footer>
+  </body>
+  </html>`;
+
+      // 主题：先注入容器默认值的 meta（site-theme / site-skin），再在 </head> 前放引导脚本。
+      // 访客自己选过的记在 localStorage 里，脚本会用它盖过默认值；首帧就是对的主题。
+      html = SiteMeta.applyThemeMeta(html);
+
+      html = html.replace(/(<\/head>)/i, (_match: string, close: string) => {
+          return "    " + SiteMeta.themeBootScript() + "\n" + close;
+      });
+
+      return html;
+  }
 
     /**
      * 列出 public/backups 里的归档文件（就是 archive.sh / 容器内定时任务产出的那些）。

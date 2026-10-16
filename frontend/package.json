@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "copy:backend": "copyfiles -u 1 \"dist/**/*\" ../backend/public",
-    "build": "cross-env NODE_ENV=production webpack && node scripts/prerender.mjs",
+    "build": "cross-env NODE_ENV=production webpack && node scripts/prerender.mjs && node scripts/emit-themes.mjs",
     "clean": "rimraf ./dist ./node_modules",
     "dev": "cross-env NODE_ENV=development webpack",
     "watch": "cross-env NODE_ENV=development webpack-dev-server --progress --hot"
