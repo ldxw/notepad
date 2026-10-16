@@ -257,6 +257,27 @@ export class Server {
         return "notepad.mx";
     }
 
+    /** 是不是归档文件名：archive.tar.gz 或 archive_YYYYMMDD.tar.gz（archive.sh 只产出这两种） */
+    protected static isArchiveName(name: string): boolean {
+
+        return /^archive(_\d{8})?\.tar\.gz$/i.test(name);
+    }
+
+    /**
+     * 页脚一行：年份 + 站名 + 上游归属。
+     * 上游链接保持原样（指向 GitHub 上的原始项目），这是页面上对上游的署名。
+     */
+    protected static footerText(zh: boolean): string {
+
+        const year = new Date().getFullYear();
+
+        const upstream = `<a href="https://github.com/Athlon1600/notepad" target="_blank" rel="nofollow noopener noreferrer">Athlon1600/notepad</a>`;
+
+        return zh
+            ? `© ${year} ${Server.siteNameFor(zh)} · 基于开源的 ${upstream} 构建`
+            : `© ${year} ${Server.siteNameFor(zh)} · Built on the open-source ${upstream}`;
+    }
+
     /**
      * 页头中间的标语 —— 与首页同一句话（首页取自 frontend/src/i18n.js 的 app.banner）。
      * 改文案时两边一起改：首页在 i18n.js，服务端渲染页在这里。
@@ -410,6 +431,19 @@ export class Server {
   }
   footer { margin-top: 2.5rem; color: #a3a1a1; font-size: 0.8rem; line-height: 1.7; }
   footer code { background: transparent; padding: 0; }
+  /* 站点页脚（与首页同款，居中在正文宽度内） */
+  .site-footer {
+    max-width: 44rem;
+    margin: 3rem auto 0;
+    padding: 1rem 1rem 0;
+    border-top: 1px solid #aab7b8;
+    color: #a3a1a1;
+    font-size: 0.8rem;
+    text-align: center;
+  }
+  .site-footer p { margin: 0; }
+  .site-footer a { color: #a3a1a1; }
+  .site-footer a:hover { color: #f42f42; }
   /* 页头中间标语（首页同款：居中，窄屏隐藏） */
   .site-header .banner {
     flex: 1 1 auto;
@@ -500,6 +534,9 @@ ${Server.pageCss()}</style>
 <div class="wrap">
 ${body}
 </div>
+<footer class="site-footer">
+  <p>${Server.footerText(zh)}</p>
+</footer>
 </body>
 </html>`;
     }
@@ -529,6 +566,9 @@ ${body}
             try {
                 files = fs.readdirSync(backupsDir)
                     .map((name: string) => ({name, full: path.join(backupsDir, name)}))
+                    // 只列归档本身（archive.tar.gz / archive_YYYYMMDD.tar.gz）：
+                    // 目录里还可能有 .gitignore 这类无关文件，别混进清单。
+                    .filter((f: any) => Server.isArchiveName(f.name))
                     .filter((f: any) => fs.statSync(f.full).isFile())
                     .map((f: any) => ({name: f.name, size: fs.statSync(f.full).size, mtime: fs.statSync(f.full).mtime}))
                     .sort((a: any, b: any) => b.mtime.getTime() - a.mtime.getTime());

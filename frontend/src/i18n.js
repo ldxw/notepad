@@ -12,6 +12,7 @@ export const messages = {
 
         "app.banner": `<h3 class="mb-0">Store your notes securely online</h3>`,
         "app.githubRepo": "GitHub Repo",
+        "app.footerCredit": `Built on the open-source <a href="https://github.com/Athlon1600/notepad" target="_blank" rel="nofollow noopener noreferrer">Athlon1600/notepad</a>`,
 
         "lang.label": "Language",
         "lang.switch": "Switch language",
@@ -79,6 +80,7 @@ export const messages = {
 
         "app.banner": `<h3 class="mb-0">安全地把你的笔记保存在网上</h3>`,
         "app.githubRepo": "GitHub 仓库",
+        "app.footerCredit": `基于开源的 <a href="https://github.com/Athlon1600/notepad" target="_blank" rel="nofollow noopener noreferrer">Athlon1600/notepad</a> 构建`,
 
         "lang.label": "语言",
         "lang.switch": "切换语言",

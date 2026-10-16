@@ -32,6 +32,11 @@
     <Editor v-if="state.authKey"></Editor>
     <Home v-else></Home>
 
+    <!-- 站点页脚：首页可见；进编辑页后不显示（编辑页要占满屏幕） -->
+    <footer class="site-footer" v-if="!state.authKey">
+        <p>© {{ year }} {{ siteName }} · <span v-html="t('app.footerCredit')"></span></p>
+    </footer>
+
 </template>
 
 <script>
@@ -65,6 +70,9 @@ export default {
     },
     currentLocale() {
         return locale.value
+    },
+    year() {
+        return new Date().getFullYear()
     },
     noteColor(){
         if (store.state.authKey) {

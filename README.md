@@ -256,6 +256,8 @@ or execute the command above once. The `/backups/` page footer shows the setting
 `notepad.mx/backups/`: the page shows every archive with its size and date, and each one downloads
 straight from there. Only encrypted blobs live in that directory, so exposing it is safe; the
 homepage's download link points at it too.
+Only `archive.tar.gz` and `archive_YYYYMMDD.tar.gz` are listed — anything else in the directory
+(a stray `.gitignore`, for instance) is left out of the listing.
 
 If the directory does not exist yet (a `backend/public` bind mount that started out empty, for
 instance), the archive job creates it itself — `archive.sh` no longer exits with

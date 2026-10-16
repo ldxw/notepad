@@ -156,3 +156,27 @@ nav.nav-links {
   }
 }
 
+// 站点页脚（首页可见，与 /backups/ 等服务端渲染页同一套配色）
+.site-footer {
+  max-width: 700px;
+  margin: 3rem auto 0;
+  padding: 1rem 1rem 0;
+  border-top: 1px solid #aab7b8;
+  color: #a3a1a1;
+  font-size: 0.8rem;
+  text-align: center;
+
+  p {
+    margin: 0;
+  }
+
+  a {
+    color: #a3a1a1;
+    text-decoration: underline;
+
+    &:hover {
+      color: #f42f42;
+    }
+  }
+}
+

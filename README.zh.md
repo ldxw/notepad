@@ -246,6 +246,7 @@ docker exec -it notepad env ARCHIVE_KEEP_DAYS=7 sh backend/bin/archive.sh
 `archive.sh` 与容器内定时任务产出的归档都放在 `backend/public/backups/`，访问 **`/backups/`**
 就能看到列表（文件名、大小、修改时间）并直接下载 —— 和上游 `notepad.mx/backups/` 一个思路。
 目录里只有加密后的密文，公开暴露是安全的；首页那段说明里的下载链接也指向这里。
+页面只列 `archive.tar.gz` 与 `archive_YYYYMMDD.tar.gz` 这两种归档，目录里其它文件（比如镜像自带的 `.gitignore`）不会混进清单。
 
 如果这个目录还不存在（比如 `backend/public` 是 docker 刚建出来的空挂载目录），归档任务会自己把它建出来 ——
 `archive.sh` 不会再像原来那样报 "public directory … not found" 然后退出。
