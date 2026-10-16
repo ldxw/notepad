@@ -34,43 +34,6 @@
    }
   },
   {
-   "id": "original",
-   "light": {
-    "--bg": "#ffffff",
-    "--surface": "#ffffff",
-    "--surface-2": "#f6f6f6",
-    "--text": "#2c3e50",
-    "--muted": "#a3a1a1",
-    "--border": "#aab7b8",
-    "--accent": "#f42f42",
-    "--link": "#0000ee",
-    "--code-bg": "#f6f6f6",
-    "--header-bg": "cornsilk",
-    "--btn-bg": "#4CAF50",
-    "--btn-text": "#ffffff",
-    "--ring": "#0000ee",
-    "--font-body": "'Trebuchet MS', sans-serif",
-    "--radius": "4px"
-   },
-   "dark": {
-    "--bg": "#14161a",
-    "--surface": "#1a1d22",
-    "--surface-2": "#20242a",
-    "--text": "#e6e8ec",
-    "--muted": "#9aa1ad",
-    "--border": "#2a2f39",
-    "--accent": "#ff6b7a",
-    "--link": "#7aa2ff",
-    "--code-bg": "#20242a",
-    "--header-bg": "#1c1f24",
-    "--btn-bg": "#2f9e44",
-    "--btn-text": "#ffffff",
-    "--ring": "#7aa2ff",
-    "--font-body": "'Trebuchet MS', sans-serif",
-    "--radius": "4px"
-   }
-  },
-  {
    "id": "paper",
    "light": {
     "--bg": "#f6f1e7",

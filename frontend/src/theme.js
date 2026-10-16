@@ -74,33 +74,6 @@ export const skins = [
     },
 
     {
-        // 上游原版的观感：白底 + 米黄页头 + 红色品牌 + Trebuchet MS 字体 + 4px 圆角。
-        // classic 被改成现代 teal 之后，原样保留这一套给"想回到原版"的部署。
-        id: "original",
-        labelKey: "skin.original",
-        light: {
-            ...palette({
-                bg: "#ffffff", surface: "#ffffff", surface2: "#f6f6f6", text: "#2c3e50",
-                muted: "#a3a1a1", border: "#aab7b8", accent: "#f42f42", link: "#0000ee",
-                code: "#f6f6f6", header: "cornsilk",
-                btnBg: "#4CAF50", btnText: "#ffffff", ring: "#0000ee"
-            }),
-            "--font-body": "'Trebuchet MS', sans-serif",
-            "--radius": "4px"
-        },
-        dark: {
-            ...palette({
-                bg: "#14161a", surface: "#1a1d22", surface2: "#20242a", text: "#e6e8ec",
-                muted: "#9aa1ad", border: "#2a2f39", accent: "#ff6b7a", link: "#7aa2ff",
-                code: "#20242a", header: "#1c1f24",
-                btnBg: "#2f9e44", btnText: "#ffffff", ring: "#7aa2ff"
-            }),
-            "--font-body": "'Trebuchet MS', sans-serif",
-            "--radius": "4px"
-        }
-    },
-
-    {
         id: "paper",
         labelKey: "skin.paper",
         light: {
