@@ -14,7 +14,9 @@ const webpackConfig = {
     entry: './src/main.js',
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'bundle.js'
+        filename: 'bundle.js',
+        // 资源用绝对路径：/backups/ 这类子路径下也要能找到 bundle.js
+        publicPath: '/'
     },
     module: {
         rules: [

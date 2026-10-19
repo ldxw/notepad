@@ -66,11 +66,12 @@
 
   </div>
 
-    <Editor v-if="state.authKey"></Editor>
+    <Backups v-if="isBackups"></Backups>
+    <Editor v-else-if="state.authKey"></Editor>
     <Home v-else></Home>
 
     <!-- 站点页脚：首页可见；进编辑页后不显示（编辑页要占满屏幕） -->
-    <footer class="site-footer" v-if="!state.authKey">
+    <footer class="site-footer" v-if="!state.authKey || isBackups">
         <p>© {{ year }} {{ siteName }} · <span v-html="t('app.footerCredit')"></span></p>
     </footer>
 
@@ -79,6 +80,7 @@
 <script>
 import Editor from "./Editor.vue";
 import Home from "./Home.vue";
+import Backups from "./Backups.vue";
 
 import store from "../store";
 import {t, locale, setLocale, availableLocales, siteNameFor} from "../i18n";
@@ -95,7 +97,8 @@ const ICON_BRAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 export default {
   components: {
     Home,
-    Editor
+    Editor,
+    Backups
   },
   data() {
 
@@ -130,6 +133,10 @@ export default {
     },
     currentLocale() {
         return locale.value
+    },
+    // /backups/ 由前端渲染，页头页尾就是这一份，服务端不再单独写一遍
+    isBackups() {
+        return /^\/backups\/?$/.test(window.location.pathname);
     },
     year() {
         return new Date().getFullYear()

@@ -70,6 +70,9 @@ export class Server {
             }
         });
 
+        Server.spaHtml = indexHtml;
+        Server.spaHtmlByLang = indexByLang;
+
         if (indexHtml !== null || Object.keys(indexByLang).length) {
 
             const overrides = SiteMeta.describeOverrides();
@@ -83,24 +86,7 @@ export class Server {
             }
 
             this.app.get(['/', '/index.html'], (req: Request, res: Response) => {
-
-                // 运行时显式设了 SITE_LANG（zh / en）就用那一套、忽略访客语言；
-                // 没设或写的是 auto 时，才按访客的 Accept-Language 挑预渲染的那份
-                const pinned = SiteMeta.normalizeLang(process.env[SiteMeta.ENV.lang]);
-
-                const lang = pinned || (Server.prefersChinese(req) ? "zh" : "en");
-
-                const html = indexByLang[lang] || indexHtml;
-
-                if (!html) {
-                    res.status(404).send("Not Found");
-                    return;
-                }
-
-                res.set('Content-Type', 'text/html; charset=utf-8');
-                // 同一个地址会按语言发不同内容，告诉中间的缓存/代理别把语言串了
-                res.set('Vary', 'Accept-Language');
-                res.send(html);
+                Server.sendSpa(req, res);
             });
         }
 
@@ -633,6 +619,10 @@ export class Server {
     /** 可用皮肤 id（buildThemeCss 读到 themes.json 时填，供服务端页的主题下拉用） */
     protected static themeSkins: string[] = [];
 
+    /** 构建好的 SPA 首页 HTML（首页和 /backups/ 共用同一份壳子，页头页尾才完全一致） */
+    protected static spaHtml: string | null = null;
+    protected static spaHtmlByLang: {[lang: string]: string} = {};
+
     /**
      * 服务端渲染页的主题样式，启动时算一次（enableStatic 里调用）。
      *
@@ -874,12 +864,10 @@ ${body}
         const fs = require('fs');
         const backupsDir = path.join(publicDir, 'backups');
 
-        const canDownload = Server.backupsDownloadEnabled();
+        // 归档清单接口：页面本身交给前端渲染，页头页尾就是首页那一份，不再重复实现一遍
+        this.app.get('/api/backups', (req: Request, res: Response) => {
 
-        this.app.get(['/backups', '/backups/'], (req: Request, res: Response) => {
-
-            // 归档保留天数：只用于说明策略（真正的删除在 backend/bin/archive.sh 里做）。
-            // 每次请求现读，保证页面上的天数和当前设置一致。
+            const canDownload = Server.backupsDownloadEnabled();
             const keepDays = Server.archiveKeepDays();
 
             let files: {name: string, size: number, mtime: Date}[] = [];
@@ -887,8 +875,7 @@ ${body}
             try {
                 files = fs.readdirSync(backupsDir)
                     .map((name: string) => ({name, full: path.join(backupsDir, name)}))
-                    // 只列归档本身（archive.tar.gz / archive_YYYYMMDD.tar.gz）：
-                    // 目录里还可能有 .gitignore 这类无关文件，别混进清单。
+                    // 只列归档本身（archive.tar.gz / archive_YYYYMMDD.tar.gz）：目录里还可能有 .gitignore 之类
                     .filter((f: any) => Server.isArchiveName(f.name))
                     .filter((f: any) => fs.statSync(f.full).isFile())
                     .map((f: any) => ({name: f.name, size: fs.statSync(f.full).size, mtime: fs.statSync(f.full).mtime}))
@@ -897,82 +884,48 @@ ${body}
                 // 还没产生过备份（首次归档之前）—— 当作空目录处理
             }
 
-            const zh = Server.resolveLangZh(req, res);
-
-            const totalSize = files.reduce((sum: number, f: any) => sum + f.size, 0);
-
-            // 内联 SVG 而不是 emoji：不依赖系统 emoji 字体，任何环境都长一样
-            const boxIcon = `<svg class="file-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8"/><rect x="2" y="3" width="20" height="5" rx="1.5"/><path d="M10 12h4"/></svg>`;
-
-            const cards = files.map((f: any, i: number) => {
-
-                const badge = i === 0
-                    ? `<span class="badge">${zh ? "最新" : "latest"}</span>`
-                    : "";
-
-                const inner = `  ${boxIcon}
-  <span class="meta">
-    <span class="name">${Server.escapeHtml(f.name)}${badge}</span>
-    <span class="sub">${Server.formatBytes(f.size)} · ${Server.formatTime(f.mtime)}</span>
-  </span>`;
-
-                if (!canDownload) {
-                    return `<div class="card static">
-${inner}
-  <span class="dl off">${zh ? "已关闭下载" : "downloads off"}</span>
-</div>`;
-                }
-
-                return `<a class="card" href="/backups/${encodeURIComponent(f.name)}" download>
-${inner}
-  <span class="dl">${zh ? "下载" : "download"} ↓</span>
-</a>`;
-            }).join("\n");
-
-            const empty = `<div class="empty">
-  <svg class="file-icon" viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h3.4l2 2H19a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
-  <p>${zh ? "还没有备份文件。" : "No archives yet."}</p>
-  <p class="muted">${zh
-      ? "备份由站点自动定时生成，不需要手动操作 —— 生成后这里就会显示清单。"
-      : "Archives are created automatically on a schedule; the list shows up here once the first one exists."}</p>
-</div>`;
-
-            // 关闭下载时的提示条
-            const notice = canDownload ? "" : `<div class="notice">
-  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
-  <span>${zh
-      ? "管理员已关闭归档下载，这里只列出文件清单。"
-      : "Downloads are disabled by the administrator — this page only lists the archives."}</span>
-</div>`;
-
-            const body = `
-  <h1>${zh ? "备份文件" : "Backups"}</h1>
-  <p class="summary">${files.length
-      ? (zh
-          ? `共 ${files.length} 个归档 · 合计 ${Server.formatBytes(totalSize)}`
-          : `${files.length} archive${files.length > 1 ? "s" : ""} · ${Server.formatBytes(totalSize)} total`)
-      : (zh ? "本实例的加密笔记归档" : "Encrypted note archives of this instance")}</p>
-
-  ${notice}
-
-  ${files.length ? `<div class="list">\n${cards}\n</div>` : empty}
-
-  ${zh
-      ? `<section class="notes">
-    <p>这里是本实例的加密笔记归档，${canDownload ? "任何人都可以下载" : "下载已关闭，仅列出清单"}。</p>
-    <p>${keepDays ? `归档只保留最近 ${keepDays} 天，更早的会自动删除。` : "归档不自动删除，全部保留。"}</p>
-    <p>里面是加密后的笔记密文，没有对应口令无法解密；下载后解压，可以在另一个实例上继续使用这些笔记。</p>
-  </section>`
-      : `<section class="notes">
-    <p>Encrypted note archives of this instance${canDownload ? " — anyone can download them" : " — downloads are off, so this page only lists them"}.</p>
-    <p>${keepDays ? `Only the last ${keepDays} day(s) are kept; older archives are removed automatically.` : "Nothing is deleted automatically — every archive is kept."}</p>
-    <p>They hold encrypted note blobs only, useless without the matching passphrase; unpack a downloaded archive to carry the notes over to another instance.</p>
-  </section>`}
-`;
-
-            res.set('Content-Type', 'text/html; charset=utf-8');
-            res.send(Server.pageShell(zh, zh ? "备份文件" : "Backups", body, "/backups/"));
+            res.set('Cache-Control', 'no-store');
+            res.json({
+                downloadable: canDownload,
+                keepDays,
+                total: files.length,
+                totalSize: files.reduce((sum: number, f: any) => sum + f.size, 0),
+                files: files.map((f: any, i: number) => ({
+                    name: f.name,
+                    size: f.size,
+                    time: f.mtime.toISOString(),
+                    latest: i === 0,
+                    url: "/backups/" + encodeURIComponent(f.name)
+                }))
+            });
         });
+
+        // 目录页：和首页同一个 HTML 壳子，前端按路径渲染清单
+        this.app.get(['/backups', '/backups/'], (req: Request, res: Response) => {
+            Server.sendSpa(req, res);
+        });
+    }
+
+    /**
+     * 把 SPA 的 HTML 发出去：/、/backups/ 共用。
+     * 页头、页尾、主题控件都是前端那一份代码，服务端不再重复写一遍。
+     */
+    protected static sendSpa(req: Request, res: Response) {
+
+        const pinned = SiteMeta.normalizeLang(process.env[SiteMeta.ENV.lang]);
+
+        const lang = pinned || (Server.prefersChinese(req) ? "zh" : "en");
+
+        const html = Server.spaHtmlByLang[lang] || Server.spaHtml;
+
+        if (!html) {
+            res.status(404).send("Not Found");
+            return;
+        }
+
+        res.set("Content-Type", "text/html; charset=utf-8");
+        res.set("Vary", "Accept-Language");
+        res.send(html);
     }
 
     /** 文件名/文本进 HTML 前的转义 */
