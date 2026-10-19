@@ -246,11 +246,73 @@ input[type=text] {
 
 #notepad_features {
 
+  // 卡片整体是居中排版，列表单独左对齐；用悬挂缩进让换行文字对齐到正文，
+  // 而不是缩回行首（原来 list-inside + 居中，长条目换行后左右都不齐）
+  text-align: left;
+  margin: 0.25rem 0 0;
+  padding: 0;
+
   & > li {
-    @apply list-disc list-inside;
-    margin-bottom: 0.5em;
+    list-style: none;
+    padding-left: 1.75em;
+    text-indent: -1.75em;
+    margin-bottom: 0.6em;
+    line-height: 1.7;
   }
 
+  & > li:last-child {
+    margin-bottom: 0;
+  }
+
+  // 列表后面那段（“任何带浏览器的设备…”）也跟着左对齐，保持整块一致
+  & + p {
+    text-align: left;
+    margin-top: 1rem;
+  }
+
+}
+
+// 首页「/backups/」入口：从裸链接改成一个小胶囊按钮 + 下方说明
+.backup-row {
+  margin: 0.5rem 0 1rem;
+
+  .backup-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--accent);
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: border-color .16s ease, background-color .16s ease;
+
+    .backup-icon {
+      width: 1em;
+      height: 1em;
+      flex: none;
+    }
+
+    &:hover {
+      border-color: var(--accent);
+      text-decoration: none;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--ring, currentColor);
+      outline-offset: 2px;
+    }
+  }
+
+  .backup-note {
+    display: block;
+    margin-top: 0.55rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
 }
 
 nav.nav-links {

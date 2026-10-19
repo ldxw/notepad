@@ -50,10 +50,16 @@
 
                 <p v-html="t('home.securityP2')"></p>
 
-                <p>
-                    <a href="/backups/" target="_blank">/backups/</a>
-                    <br>
-                    <span v-html="t('home.securityP3')"></span>
+                <p class="backup-row">
+                    <a class="backup-link" href="/backups/" target="_blank" rel="noopener noreferrer">
+                        <svg class="backup-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                             aria-hidden="true">
+                            <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h4l2 2.5h9A1.5 1.5 0 0 1 21 10v8a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18z"/>
+                        </svg>
+                        <span>/backups/</span>
+                    </a>
+                    <span class="backup-note" v-html="t('home.securityP3')"></span>
                 </p>
 
                 <p v-html="t('home.securityP4')"></p>
