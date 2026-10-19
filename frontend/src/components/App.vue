@@ -215,6 +215,11 @@ export default {
     },
     goHome() {
       store.actions.reset();
+
+      // 不在首页（比如 /backups/）时，单纯 reset 不会离开当前页面，得真的跳回 /
+      if (window.location.pathname !== "/") {
+        window.location.assign("/");
+      }
     },
     toggleHeaderMenu() {
       this.headerMenuOpen = !this.headerMenuOpen;
