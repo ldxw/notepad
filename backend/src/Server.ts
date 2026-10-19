@@ -359,27 +359,90 @@ export class Server {
     color: #2c3e50;
     font-family: 'Trebuchet MS', sans-serif;
   }
-  .site-header {
+  #q { display: none; }
+  .header {
     display: flex;
     align-items: center;
-    padding: 0.5rem 1rem;
+    gap: 0.75rem;
+    padding: 0.6rem 1rem;
     background-color: cornsilk;
     border-bottom: 1px solid darkgrey;
+    position: sticky;
+    top: 0;
+    z-index: 40;
   }
-  .site-header h1 {
+  .header h1 {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
     margin: 0;
-    font-size: 2rem;
+    font-size: 1.15rem;
     font-weight: 700;
+    flex: none;
   }
-  .site-header .brand {
-    font-family: "Arial Rounded MT Bold", serif;
+  .header .brand { color: #2c3e50; text-decoration: none; }
+  .header .brand:hover { color: #f42f42; text-decoration: none; }
+  .brand-icon {
+    display: inline-flex;
+    width: 1.25rem;
+    height: 1.25rem;
     color: #f42f42;
-    text-decoration: underline;
+    flex: none;
   }
-  .site-header .brand:hover {
+  .brand-icon svg { width: 100%; height: 100%; }
+  .banner { flex: 1; text-align: center; min-width: 0; }
+  .banner h3 { margin: 0; font-size: 0.95rem; font-weight: 500; color: #7d8f8b; }
+  .header .right { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; flex: none; }
+  .lang-switch, .seg {
+    display: flex;
+    align-items: center;
+    border: 1px solid #aab7b8;
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+  }
+  .lang-btn, .seg-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.25rem;
+    padding: 0 0.6rem;
+    background: transparent;
+    border: 0;
+    color: #6b7a86;
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
     text-decoration: none;
+    cursor: pointer;
+    transition: background-color .16s ease, color .16s ease;
   }
-  .page-icon { margin-right: 0.25rem; }
+  .lang-btn + .lang-btn, .seg + .seg { border-left: 1px solid #aab7b8; }
+  .lang-btn:hover, .seg-btn:hover { background: #eef3f2; color: #2c3e50; text-decoration: none; }
+  .lang-btn.active, .seg-btn.active {
+    background: color-mix(in srgb, #0d9488 12%, transparent);
+    color: #0d9488;
+    font-weight: 700;
+    cursor: default;
+  }
+  .seg-btn svg { width: 1rem; height: 1rem; }
+  .seg select {
+    min-height: 2.25rem;
+    padding: 0 0.5rem;
+    border: 0;
+    background: transparent;
+    color: #2c3e50;
+    font: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+  .seg select:focus-visible { outline: 2px solid #0d9488; outline-offset: -2px; }
+  @media (max-width: 767px) {
+    .banner { display: none; }
+    .header { padding: 0.5rem 0.75rem; }
+  }
   a, a:visited, a:active {
     color: #0000EE;
     text-decoration: underline;
@@ -556,6 +619,9 @@ export class Server {
     /** 服务端渲染页用的主题样式（启用静态资源时算一次） */
     protected static themeCss = "";
 
+    /** 可用皮肤 id（buildThemeCss 读到 themes.json 时填，供服务端页的主题下拉用） */
+    protected static themeSkins: string[] = [];
+
     /**
      * 服务端渲染页的主题样式，启动时算一次（enableStatic 里调用）。
      *
@@ -581,6 +647,8 @@ export class Server {
             return "";
         }
 
+        Server.themeSkins = skins.map((one) => one.id);
+
         const vars = (tokens: any) => Object.keys(tokens || {}).map((k) => `    ${k}: ${tokens[k]};`).join("\n");
 
         const classic = skins.find((one) => one.id === "classic") || skins[0];
@@ -601,9 +669,18 @@ export class Server {
 
         // 把上面 pageCss 里写死的颜色接回令牌（同选择器、写在后面，所以优先级够）
         out.push(`  body { background: var(--bg); color: var(--text); font-family: var(--font-body, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif); }
-  .site-header { background-color: var(--header-bg); border-bottom-color: var(--border); }
-  .site-header .brand { color: var(--accent); }
-  .page-icon { color: var(--accent); }
+  .header { background-color: var(--header-bg); border-bottom-color: var(--border); }
+  .header .brand { color: var(--text); }
+  .header .brand:hover { color: var(--accent); }
+  .brand-icon { color: var(--accent); }
+  .banner h3 { color: var(--muted); }
+  .lang-switch, .seg { border-color: var(--border); background: var(--surface); }
+  .lang-btn, .seg-btn { color: var(--muted); }
+  .lang-btn + .lang-btn, .seg + .seg { border-left-color: var(--border); }
+  .lang-btn:hover, .seg-btn:hover { background: var(--surface-2); color: var(--text); }
+  .lang-btn.active, .seg-btn.active { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+  .seg select { color: var(--text); }
+  .seg select option { background: var(--surface); color: var(--text); }
   a, a:visited, a:active, .dl { color: var(--link); }
   a:hover { color: var(--accent); }
   .muted, .summary, .sub, .file-icon, .dl.off, .notes .muted { color: var(--muted); }
@@ -629,6 +706,33 @@ export class Server {
   .lang-switch .lang-btn.active { background-color: color-mix(in srgb, var(--text) 16%, transparent); }`);
 
         return "  <style>\n" + out.join("\n") + "\n  </style>";
+    }
+
+
+    /** 服务端页的主题下拉选项（id 来自 themes.json，文案用固定中英名） */
+    protected static skinOptions(zh: boolean): string {
+
+        const labels: {[id: string]: [string, string]} = {
+            classic: ["经典", "Classic"],
+            paper: ["纸张", "Paper"],
+            ocean: ["海洋", "Ocean"],
+            forest: ["森林", "Forest"],
+            grape: ["葡萄", "Grape"],
+            sunset: ["日落", "Sunset"],
+            mono: ["黑白", "Mono"],
+            neon: ["霓虹", "Neon"],
+            bento: ["磁贴", "Bento"],
+            glass: ["玻璃", "Glass"],
+            fluid: ["自适应", "Fluid"]
+        };
+
+        const ids = Server.themeSkins.length ? Server.themeSkins : Object.keys(labels);
+
+        return ids.map((id) => {
+            const pair = labels[id];
+            const text = pair ? (zh ? pair[0] : pair[1]) : id;
+            return `<option value="${Server.escapeHtml(id)}">${Server.escapeHtml(text)}</option>`;
+        }).join("");
     }
 
     /**
@@ -658,19 +762,80 @@ ${Server.pageCss()}</style>
 ${Server.themeCss}
 </head>
 <body>
-<div class="site-header">
-  <h1><span class="page-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1.05em;height:1.05em;vertical-align:-0.15em"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></span><a class="brand" href="/">${Server.siteNameFor(zh)}</a></h1>
+<header class="header">
+  <h1><span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></span><a class="brand" href="/">${Server.siteNameFor(zh)}</a></h1>
   <div class="banner"><h3>${Server.headerBanner(zh)}</h3></div>
   <div class="right">
-    <span class="lang-switch" role="group" aria-label="${zh ? "语言" : "Language"}"><span class="lang-btn active" aria-current="true">${zh ? "中文" : "English"}</span><a class="lang-btn" href="${here}?lang=${other}" title="${zh ? "切换到 English" : "Switch to 中文"}" onclick="try{localStorage.setItem('locale','${other}')}catch(e){}">${otherLabel}</a></span>
+    <span class="lang-switch" role="group" aria-label="${zh ? "语言" : "Language"}"><span class="lang-btn active" aria-current="true">${zh ? "中文" : "English"}</span><a class="lang-btn" href="${here}" data-lang="${other}" title="${zh ? "切换到 English" : "Switch to 中文"}">${otherLabel}</a></span>
+    <span class="seg" role="group" aria-label="${zh ? "明暗模式" : "Colour mode"}">
+      <button type="button" class="seg-btn" data-mode="auto" title="${zh ? "跟随系统" : "System"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></button>
+      <button type="button" class="seg-btn" data-mode="light" title="${zh ? "浅色" : "Light"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
+      <button type="button" class="seg-btn" data-mode="dark" title="${zh ? "深色" : "Dark"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+    </span>
+    <span class="seg" title="${zh ? "主题皮肤" : "Theme"}">
+      <select id="skin-pick" aria-label="${zh ? "主题皮肤" : "Theme"}">${Server.skinOptions(zh)}</select>
+    </span>
   </div>
-</div>
+</header>
 <div class="wrap">
 ${body}
 </div>
 <footer class="site-footer">
   <p>${Server.footerText(zh)}</p>
   </footer>
+  <script>
+  (function () {
+    var H = document.documentElement;
+    var btns = [].slice.call(document.querySelectorAll('.seg-btn[data-mode]'));
+    var sel = document.getElementById('skin-pick');
+
+    // 语言：写 cookie 后跳转，地址栏不保留 ?lang=
+    [].slice.call(document.querySelectorAll('.lang-btn[data-lang]')).forEach(function (a) {
+      a.addEventListener('click', function () {
+        var code = a.getAttribute('data-lang');
+        try {
+          document.cookie = 'notepad_lang=' + code + ';path=/;max-age=31536000;SameSite=Lax';
+          localStorage.setItem('locale', code);
+        } catch (e) {}
+      });
+    });
+
+    // 从带 ?lang= 的链接进来时，把参数从地址栏去掉（服务端已按它选好语言并写了 cookie）
+    try {
+      var url = new URL(window.location.href);
+      if (url.searchParams.has('lang')) {
+        url.searchParams.delete('lang');
+        window.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
+      }
+    } catch (e) {}
+
+    function refresh() {
+      btns.forEach(function (b) {
+        var on = b.getAttribute('data-mode') === (H.getAttribute('data-theme') || 'auto');
+        b.classList.toggle('active', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      if (sel) sel.value = H.getAttribute('data-skin') || 'classic';
+    }
+
+    btns.forEach(function (b) {
+      b.addEventListener('click', function () {
+        var mode = b.getAttribute('data-mode');
+        try { localStorage.setItem('theme', mode); } catch (e) {}
+        H.setAttribute('data-theme', mode);
+        refresh();
+      });
+    });
+
+    if (sel) sel.addEventListener('change', function () {
+      try { localStorage.setItem('skin', sel.value); } catch (e) {}
+      H.setAttribute('data-skin', sel.value);
+      refresh();
+    });
+
+    refresh();
+  })();
+  </script>
   </body>
   </html>`;
 
