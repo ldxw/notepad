@@ -631,8 +631,8 @@ export class Server {
 
     /**
      * 套上站点页头，拼出完整 HTML（/backups/ 列表页与 403 页共用）。
-     * 页头刻意与首页一致：左边站名、中间标语、右边 GitHub 链接 + 语言切换；
-     * 窄屏（<768px）标语与 GitHub 链接隐藏，右侧那组靠 margin-left:auto 保持贴右。
+     * 页头刻意与首页一致：左边站名、中间标语、右边语言切换；
+     * 窄屏（<768px）标语隐藏，右侧那组靠 margin-left:auto 保持贴右。
      * basePath 是当前页面路径，用来拼语言切换链接（?lang=zh / ?lang=en）。
      */
     protected static pageShell(zh: boolean, title: string, body: string, basePath: string = "/"): string {
@@ -660,7 +660,6 @@ ${Server.themeCss}
   <h1><span class="page-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1.05em;height:1.05em;vertical-align:-0.15em"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></span><a class="brand" href="/">${Server.siteNameFor(zh)}</a></h1>
   <div class="banner"><h3>${Server.headerBanner(zh)}</h3></div>
   <div class="right">
-    <nav class="nav-links"><a href="https://github.com/Athlon1600/notepad" target="_blank" rel="nofollow noopener noreferrer">${zh ? "GitHub 仓库" : "GitHub Repo"}</a></nav>
     <span class="lang-switch" role="group" aria-label="${zh ? "语言" : "Language"}"><span class="lang-btn active" aria-current="true">${zh ? "中文" : "English"}</span><a class="lang-btn" href="${here}?lang=${other}" title="${zh ? "切换到 English" : "Switch to 中文"}" onclick="try{localStorage.setItem('locale','${other}')}catch(e){}">${otherLabel}</a></span>
   </div>
 </div>

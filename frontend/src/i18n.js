@@ -11,7 +11,6 @@ export const messages = {
     en: {
 
         "app.banner": `<h3 class="mb-0">Store your notes securely online</h3>`,
-        "app.githubRepo": "GitHub Repo",
         "app.footerCredit": `Built on the open-source <a href="https://github.com/Athlon1600/notepad" target="_blank" rel="nofollow noopener noreferrer">Athlon1600/notepad</a>`,
 
         "lang.label": "Language",
@@ -79,8 +78,6 @@ export const messages = {
             It will continue existing somewhere on the server,
             but because it was encrypted,
             not even the server administrator will be able to find it or decrypt it.`,
-        "home.feedbackTitle": "💡 Ideas/Feedback",
-        "home.feedbackP": `This project is entirely open source. You can discuss it all on our GitHub page here:`,
 
         "editor.toolbar": "🔒 All text is automatically encrypted and saved as you type.",
         "editor.placeholder": "Nothing written here yet! Write something!",
@@ -96,7 +93,6 @@ export const messages = {
     zh: {
 
         "app.banner": `<h3 class="mb-0">安全地把你的笔记保存在网上</h3>`,
-        "app.githubRepo": "GitHub 仓库",
         "app.footerCredit": `基于开源的 <a href="https://github.com/Athlon1600/notepad" target="_blank" rel="nofollow noopener noreferrer">Athlon1600/notepad</a> 构建`,
 
         "lang.label": "语言",
@@ -152,8 +148,6 @@ export const messages = {
         "home.forgotP": `那你的笔记就永远找不回来了。
             它可能还存在于服务器的某个角落，但因为已被加密，
             连服务器管理员都无法找到或解密它。`,
-        "home.feedbackTitle": "💡 想法 / 反馈",
-        "home.feedbackP": `这个项目完全开源。欢迎到我们的 GitHub 页面一起讨论：`,
 
         "editor.toolbar": "🔒 你输入的每一个字都会自动加密并保存。",
         "editor.placeholder": "这里还什么都没写！写点什么吧！",

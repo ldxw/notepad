@@ -65,17 +65,6 @@
                 <p v-html="t('home.forgotP')"></p>
             </section>
 
-            <section class="note-card">
-                <h2>{{ t('home.feedbackTitle') }}</h2>
-
-                <p>
-                    {{ t('home.feedbackP') }}
-
-                    <a href="https://github.com/Athlon1600/notepad"
-                       target="_blank">https://github.com/Athlon1600/notepad</a>
-                </p>
-            </section>
-
         </div>
 
     </div>
