@@ -923,9 +923,13 @@ ${body}
             return;
         }
 
+        // 预渲染的静态 HTML 里，页脚年份是构建那年的；这里换成当前年份，
+        // 这样即使前置脚本没跑起来（或看的是源码），年份也不会停在构建年。
+        const year = String(new Date().getFullYear());
+
         res.set("Content-Type", "text/html; charset=utf-8");
         res.set("Vary", "Accept-Language");
-        res.send(html);
+        res.send(html.replace(/©\s*\d{4}/g, "© " + year));
     }
 
     /** 文件名/文本进 HTML 前的转义 */
