@@ -441,7 +441,28 @@ export class Server {
   .seg select:focus-visible { outline: 2px solid #0d9488; outline-offset: -2px; }
   @media (max-width: 767px) {
     .banner { display: none; }
-    .header { padding: 0.5rem 0.75rem; }
+    .header {
+      flex-wrap: wrap;
+      row-gap: 0.45rem;
+      padding: 0.5rem 0.75rem;
+    }
+    .header h1 { font-size: 1rem; }
+    .header .right {
+      width: 100%;
+      justify-content: flex-end;
+      gap: 0.4rem;
+    }
+    .lang-btn, .seg-btn {
+      min-height: 2rem;
+      padding: 0 0.5rem;
+      font-size: 0.8rem;
+    }
+    .seg select {
+      min-height: 2rem;
+      padding: 0 0.35rem;
+      font-size: 0.8rem;
+      max-width: 6.5rem;
+    }
   }
   a, a:visited, a:active {
     color: #0000EE;
