@@ -392,7 +392,9 @@ export class Server {
   .summary { color: #a3a1a1; font-size: 0.9rem; margin: 0; text-align: center; }
   .notice {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
     gap: 0.5rem;
     margin: 1.25rem 0;
     padding: 0.75rem 1rem;
@@ -698,10 +700,11 @@ ${body}
 
         const canDownload = Server.backupsDownloadEnabled();
 
-        // 归档保留天数：只用于在页脚说明策略（真正的删除在 backend/bin/archive.sh 里做）
-        const keepDays = Server.archiveKeepDays();
-
         this.app.get(['/backups', '/backups/'], (req: Request, res: Response) => {
+
+            // 归档保留天数：只用于说明策略（真正的删除在 backend/bin/archive.sh 里做）。
+            // 每次请求现读，保证页面上的天数和当前设置一致。
+            const keepDays = Server.archiveKeepDays();
 
             let files: {name: string, size: number, mtime: Date}[] = [];
 
@@ -783,13 +786,11 @@ ${inner}
     <p>这里是本实例的加密笔记归档，${canDownload ? "任何人都可以下载" : "下载已关闭，仅列出清单"}。</p>
     <p>${keepDays ? `归档只保留最近 ${keepDays} 天，更早的会自动删除。` : "归档不自动删除，全部保留。"}</p>
     <p>里面是加密后的笔记密文，没有对应口令无法解密；下载后解压，可以在另一个实例上继续使用这些笔记。</p>
-    <p class="muted">时间为站点本地时间。</p>
   </section>`
       : `<section class="notes">
     <p>Encrypted note archives of this instance${canDownload ? " — anyone can download them" : " — downloads are off, so this page only lists them"}.</p>
     <p>${keepDays ? `Only the last ${keepDays} day(s) are kept; older archives are removed automatically.` : "Nothing is deleted automatically — every archive is kept."}</p>
     <p>They hold encrypted note blobs only, useless without the matching passphrase; unpack a downloaded archive to carry the notes over to another instance.</p>
-    <p class="muted">Times are the site's local time.</p>
   </section>`}
 `;
 
