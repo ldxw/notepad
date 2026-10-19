@@ -649,6 +649,7 @@ export class Server {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex">
+<link rel="icon" href="${Server.escapeHtml(SiteMeta.iconHref())}">
 <title>${Server.escapeHtml(title)}</title>
 <style>
 ${Server.pageCss()}</style>

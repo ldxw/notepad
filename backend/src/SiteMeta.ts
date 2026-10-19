@@ -212,6 +212,17 @@ export class SiteMeta {
         return html.replace(/(<\/head>)/i, "  " + tag + "\n$1");
     }
 
+    /**
+     * 当前应该用的 favicon 地址：设了 SITE_ICON 就用它，否则用内置的 /favicon.ico。
+     * 服务端渲染页（/backups/、403）也用它，保证和首页一致。
+     */
+    public static iconHref(env: NodeJS.ProcessEnv = process.env): string {
+
+        const icon = (env[SiteMeta.ENV.icon] || "").trim();
+
+        return icon || "/favicon.ico";
+    }
+
     /** 转义为双引号属性值安全的内容 */
     protected static escapeAttr(value: string): string {
         return value
