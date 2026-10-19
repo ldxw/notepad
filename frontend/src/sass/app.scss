@@ -813,6 +813,11 @@ nav.nav-links {
   position: relative;
 }
 
+/* 语言切换在移动端也直接显示，靠右顶到开关前面 */
+.header-lang {
+  margin-left: auto;
+}
+
 .header-toggle {
   display: none;
   align-items: center;
@@ -851,5 +856,10 @@ nav.nav-links {
     /* 触控热区别太小 */
     width: 2.5rem;
     height: 2.5rem;
+    margin-left: 0.4rem;
+  }
+
+  .header-lang {
+    margin-left: auto;
   }
 }

@@ -12,7 +12,17 @@
 
     <div class="hidden md:block flex-grow text-center items-center mb-0" v-html="banner"></div>
 
-      <!-- 移动端：控件收进这个按钮，点开才展开，桌面端不显示 -->
+      <!-- 语言切换：移动端也直接显示，不折叠 -->
+      <div class="lang-switch header-lang" :title="t('lang.switch')" :aria-label="t('lang.label')">
+
+              <button type="button"
+                      v-for="l in locales"
+                      :key="l.code"
+                      :class="['lang-btn', {active: l.code === currentLocale}]"
+                      :aria-pressed="l.code === currentLocale"
+                      @click="setLocale(l.code)">{{ l.label }}</button>
+          </div>
+
       <button type="button"
               class="header-toggle"
               :class="{active: headerMenuOpen}"
@@ -24,15 +34,6 @@
               v-html="toggleIcon"></button>
 
       <div class="flex items-center shrink-0 ml-auto header-actions" :class="{open: headerMenuOpen}">
-          <div class="lang-switch" :title="t('lang.switch')" :aria-label="t('lang.label')">
-              <button type="button"
-                      v-for="l in locales"
-                      :key="l.code"
-                      :class="['lang-btn', {active: l.code === currentLocale}]"
-                      :aria-pressed="l.code === currentLocale"
-                      @click="setLocale(l.code)">{{ l.label }}</button>
-          </div>
-
           <!-- 主题：明暗模式（跟随系统 / 浅色 / 深色）—— 与语言切换同一套分段控件观感 -->
           <div class="seg" :title="t('theme.label')" :aria-label="t('theme.label')">
               <button type="button"
