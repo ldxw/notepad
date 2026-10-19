@@ -577,3 +577,43 @@ nav.nav-links {
     transition: background-color .16s ease, color .16s ease, border-color .16s ease;
   }
 }
+
+/* 窄屏：页头保持一行，收掉站名文字只留图标，控件压紧 —— 备份页用同一套规则 */
+@media (max-width: 640px) {
+  .header {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    gap: 0.35rem;
+  }
+
+  .header .brand {
+    display: none;
+  }
+
+  .lang-switch .lang-btn,
+  .seg .seg-btn {
+    padding: 0 0.45rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* 更窄的机器（<=360）：再收一档，保证不横向滚动 */
+@media (max-width: 360px) {
+  .header {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    gap: 0.25rem;
+  }
+
+  .lang-switch .lang-btn,
+  .seg .seg-btn {
+    min-height: 2rem;
+    padding: 0 0.35rem;
+    font-size: 0.75rem;
+  }
+
+  .lang-switch .lang-btn + .lang-btn,
+  .seg .seg-btn + .seg-btn {
+    border-left-width: 1px;
+  }
+}
