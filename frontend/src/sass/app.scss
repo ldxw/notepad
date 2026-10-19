@@ -586,8 +586,37 @@ nav.nav-links {
     gap: 0.35rem;
   }
 
-  .header .brand {
+  /* 控件默认收进面板，桌面端仍然全部平铺 */
+  .header .header-actions {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    right: 0.5rem;
     display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+    margin-left: 0;
+    padding: 0.5rem;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 10px 28px color-mix(in srgb, #000 16%, transparent);
+    z-index: 60;
+
+    &.open {
+      display: flex;
+    }
+
+    .lang-switch,
+    .seg {
+      width: 100%;
+      margin-left: 0;
+    }
+
+    .lang-switch .lang-btn,
+    .seg .seg-btn {
+      flex: 1;
+    }
   }
 
   .lang-switch .lang-btn,
@@ -777,4 +806,50 @@ nav.nav-links {
   .backups-title { font-size: 1.35rem; }
   .backup-card { padding: 0.65rem 0.75rem; gap: 0.6rem; }
   .backup-card .backup-dl { font-size: 0.82rem; }
+}
+
+/* 页头：移动端的“更多设置”开关 */
+.header {
+  position: relative;
+}
+
+.header-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-left: auto;
+  padding: 0;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .16s ease, border-color .16s ease, background-color .16s ease;
+
+  svg {
+    width: 1.15rem;
+    height: 1.15rem;
+  }
+
+  &:hover {
+    color: var(--text);
+    background-color: var(--surface-2);
+  }
+
+  &.active {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+}
+
+@media (max-width: 640px) {
+  .header-toggle {
+    display: inline-flex;
+    /* 触控热区别太小 */
+    width: 2.5rem;
+    height: 2.5rem;
+  }
 }

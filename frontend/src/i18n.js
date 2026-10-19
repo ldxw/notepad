@@ -27,6 +27,7 @@ export const messages = {
         "backups.keepAll": "Nothing is deleted automatically — every archive is kept.",
         "backups.hint": "They hold encrypted note blobs only, useless without the matching passphrase; unpack a downloaded archive to carry the notes over to another instance.",
 
+        "app.settings": "Settings",
         "lang.label": "Language",
         "lang.switch": "Switch language",
 
@@ -123,6 +124,7 @@ export const messages = {
         "backups.keepAll": "归档不自动删除，全部保留。",
         "backups.hint": "里面是加密后的笔记密文，没有对应口令无法解密；下载后解压，可以在另一个实例上继续使用这些笔记。",
 
+        "app.settings": "设置",
         "lang.label": "语言",
         "lang.switch": "切换语言",
 
