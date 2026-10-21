@@ -80,6 +80,14 @@ html[data-skin="fluid"] {
     /* ---- 窄屏：页头换行、点按区加高、面板改贴底抽屉 ---- */
     @media (max-width: 640px) {
 
+        /* 小屏上左侧内边距 + 长占位符会显得像没对齐：改回居中，
+           顺便把字号收到 16px —— 长占位符放得下，也不会触发 iOS 聚焦放大 */
+        #phrase {
+            text-align: center;
+            padding-left: 1.1em;
+            padding-right: 1.1em;
+        }
+
         .header {
             flex-wrap: wrap;
             row-gap: 0.4rem;
@@ -113,10 +121,10 @@ html[data-skin="fluid"] {
             border-radius: 14px;
         }
 
-        /* 正文在窄屏不需要那么宽的留白 */
+        /* 正文在窄屏不需要那么宽的留白；口令框再小一号，长占位符才放得下 */
         .login-box input[type=text],
         #phrase {
-            font-size: 1.15em;
+            font-size: 1em;
         }
     }
 
