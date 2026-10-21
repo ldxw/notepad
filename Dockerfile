@@ -1,4 +1,4 @@
-FROM node:24-alpine3.23 AS builder
+FROM node:24.22.1-alpine3.23 AS builder
 WORKDIR /app
 
 COPY backend/package.json ./backend/
@@ -11,7 +11,7 @@ RUN npm install --prefix ./frontend/
 
 # 预渲染（Chrome for Testing 的 headless-shell）所在的阶段。
 # x64 用 linux64、arm64 用 linux-arm64，都是官方二进制；下面按 TARGETARCH 自动选。
-FROM node:24-bookworm AS vue-build
+FROM node:24.22.1-bookworm AS vue-build
 WORKDIR /app
 
 # headless-shell 需要的系统库 + 解压工具（库名逐个对照过 bookworm 包索引）
@@ -51,7 +51,7 @@ ENV SITE_LANG=${SITE_LANG}
 RUN cd frontend && npm run build
 
 
-FROM node:24-alpine3.23 AS runner
+FROM node:24.22.1-alpine3.23 AS runner
 WORKDIR /app
 
 COPY --from=vue-build /app/frontend ./frontend
