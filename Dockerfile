@@ -62,6 +62,10 @@ RUN apk --update add tar dcron tzdata
 COPY ./backend ./backend
 RUN cd backend && npm run build
 
+# 构建完把开发依赖剪掉：nodemon/copyfiles/rimraf 这些只给开发用，
+# 留在运行镜像里既占体积又带一些与业务无关的漏洞告警。
+RUN cd backend && npm prune --omit=dev
+
 # 冒烟测试：确认 archive.sh 在镜像自带的 shell（Alpine 的 busybox ash）下能跑通。
 # 它经常以 `sh backend/bin/archive.sh` 的方式被调用（docker exec 或容器内 cron），
 # 之前遇到 public/backups 目录不存在就直接报错退出 —— 构建时跑一遍，不兼容当场失败。

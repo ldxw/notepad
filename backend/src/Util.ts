@@ -1,7 +1,9 @@
 const base64url = require('base64-url');
 
 const base62 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const base62Encoder = require('base-x')(base62);
+// base-x 5.x 的 CJS 入口把默认导出放在 .default 上（4.x 是直接导出函数），两种都兼容
+const baseX = require('base-x');
+const base62Encoder = (baseX.default || baseX)(base62);
 
 // misc functions that don't fit anywhere else
 
