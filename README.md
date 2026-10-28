@@ -11,6 +11,7 @@ Useful for easy sharing of text between people or devices.
 
 - No registration process. You use a passphrase as your login.
 - Fully encrypted at client-side. No one can read your notes, except you.
+- The same note stays in step across all your devices — both open at once, both live
 - Extremely minimal and lightweight
 
 ## :star: Demo
@@ -117,6 +118,48 @@ You may also do your own backups periodically by running this command (typically
 ```shell
 docker exec -it notepad sh -c "sh backend/bin/archive.sh"
 ```
+
+## :repeat: One note, several devices
+
+Open the same passphrase on two devices (or two browser tabs) and both stay in step. There is no
+account and no server-side session: each open editor polls its own encrypted note every **3 seconds**
+and compares the `timestamp` inside the envelope. The ciphertext cannot be compared — every
+encryption uses a fresh random IV, so the same text encrypts differently every time.
+
+- **You are only reading** — the other device's edits land on their own, within about three seconds.
+  Nothing to click.
+- **You are typing and the other device saved first** — what is on your screen is never replaced
+  silently. A bar appears above the editor: **Load newest** throws away your local copy, **Keep mine**
+  writes yours back over the server's. Until you pick one, autosave stops sending, so your own typing
+  cannot wipe the bar away.
+- **You typed within the last 5 seconds** — that counts as "still writing". You get the same bar
+  instead of a silent refresh, because the version you just autosaved may well be the one that was
+  overwritten.
+
+Before every automatic write the editor re-reads the note: if the server has moved on since the copy
+you started from, it does not POST, it shows the bar. That check is what keeps a burst of fast typing
+from flattening the other device's edit.
+
+Last-writer-wins is still the rule underneath — there is no CRDT and no merge; the bar is what turns
+a silent loss into a decision. Two people editing the same paragraph at the same second will still
+end up with one of the two texts.
+
+Polling pauses while the tab is hidden and fires again the moment it comes back. Reads are sent with
+`Cache-Control: no-store`, so neither the browser nor a proxy can hand back a stale note.
+
+### How big can a note be?
+
+The limit is server-side and applies to the **encrypted envelope**, not to the characters you type:
+`express.text({limit: "256kb"})` in `backend/src/Server.ts` (`NOTE_BODY_LIMIT`).
+
+The figure the limit was sized against is `TEXT_MAX_LEN = 40000` characters in
+`frontend/src/components/Editor.vue`. 40,000 CJK characters are 120,000 UTF-8 bytes, which hex-encode
+to 240,000 characters of ciphertext plus the IV and JSON wrapping — about 240 KB. Hence 256kb. The UI
+does not enforce `TEXT_MAX_LEN` itself; the textarea is unlimited and the server is what says no.
+
+> Older builds capped the body at `10kb`, which returned `413 Note text limit reached` for anything
+> past roughly 2,000 Chinese characters. If you put your own reverse proxy in front, its body limit
+> has to be at least as large — the bundled `etc/Caddyfile` allows `1MB`.
 
 ## :globe_with_meridians: Languages / 多语言
 
@@ -341,7 +384,8 @@ Make sure your system has all the necessary dependencies installed. See this lin
 ## To-do list
 
 - rewrite frontend to use TypeScript
-- use websockets to better support multiple sessions editing same document scenarios
+- use websockets instead of 3-second polling to make multi-device sync instant
+- merge concurrent edits instead of last-writer-wins (a CRDT or a diff-based merge)
 - add option to use Redis for storing notes
 - ability to use this app via command line
 - update the editor to allow subdivision of long text into multiple subsections via linebreaks
