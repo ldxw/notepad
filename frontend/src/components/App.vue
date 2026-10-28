@@ -12,15 +12,33 @@
 
     <div class="hidden md:block flex-grow text-center items-center mb-0" v-html="banner"></div>
 
-      <!-- 语言切换：移动端也直接显示，不折叠 -->
-      <div class="lang-switch header-lang" :title="t('lang.switch')" :aria-label="t('lang.label')">
+      <!-- 语言切换：按钮只显示当前语言，点开下拉再选；移动端也直接显示，不折叠 -->
+      <div class="lang-switch header-lang" ref="langWrap">
 
               <button type="button"
-                      v-for="l in locales"
-                      :key="l.code"
-                      :class="['lang-btn', {active: l.code === currentLocale}]"
-                      :aria-pressed="l.code === currentLocale"
-                      @click="setLocale(l.code)">{{ l.label }}</button>
+                      class="lang-current"
+                      :class="{open: langMenuOpen}"
+                      :title="t('lang.switch')"
+                      :aria-label="t('lang.label')"
+                      aria-haspopup="listbox"
+                      :aria-expanded="langMenuOpen ? 'true' : 'false'"
+                      @click.stop="toggleLangMenu()">
+                  <span class="lang-text">{{ currentLocaleLabel }}</span>
+                  <span class="lang-caret" aria-hidden="true" v-html="caretIcon"></span>
+              </button>
+
+              <ul class="lang-menu" role="listbox" :aria-label="t('lang.label')" v-if="langMenuOpen">
+                  <li v-for="l in locales" :key="l.code" role="none">
+                      <button type="button"
+                              role="option"
+                              :class="{active: l.code === currentLocale}"
+                              :aria-selected="l.code === currentLocale ? 'true' : 'false'"
+                              @click="pickLocale(l.code)">
+                          <span>{{ l.label }}</span>
+                          <span class="lang-check" aria-hidden="true" v-html="l.code === currentLocale ? checkIcon : ''"></span>
+                      </button>
+                  </li>
+              </ul>
           </div>
 
       <button type="button"
@@ -103,6 +121,8 @@ const ICON_AUTO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const ICON_LIGHT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
 const ICON_DARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
 const ICON_SLIDERS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>';
+const ICON_CARET = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>';
 const ICON_PALETTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.7 0 2.5-1 2.5-2s-.8-2-2.5-2h-1.2a1.8 1.8 0 0 1 0-3.6H14A7 7 0 0 0 21 6.4C20.3 4.4 16.6 3 12 3z"/><circle cx="7.6" cy="10.4" r="1.1" fill="currentColor" stroke="none"/><circle cx="11.4" cy="7.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="16.2" cy="9.2" r="1.1" fill="currentColor" stroke="none"/></svg>';
 // 品牌图标用线性 SVG（不用 emoji：不同系统渲染差异大，且无法跟随主题色）
 const ICON_BRAND = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>';
@@ -130,8 +150,12 @@ export default {
       ],
       skinList: skins,
       paletteIcon: ICON_PALETTE,
+      caretIcon: ICON_CARET,
+      checkIcon: ICON_CHECK,
       toggleIcon: ICON_SLIDERS,
       brandIcon: ICON_BRAND,
+      // 语言下拉：默认收起
+      langMenuOpen: false,
       // 移动端页头控件面板：默认收起
       headerMenuOpen: false
     }
@@ -149,6 +173,11 @@ export default {
     },
     currentLocale() {
         return locale.value
+    },
+    // 按钮上显示的是“当前语言”的名字，选择后跟着变
+    currentLocaleLabel() {
+        const found = this.locales.find((one) => one.code === this.currentLocale);
+        return found ? found.label : this.currentLocale;
     },
     // /backups/ 由前端渲染，页头页尾就是这一份，服务端不再单独写一遍
     isBackups() {
@@ -178,6 +207,17 @@ export default {
   methods: {
     t,
     setLocale,
+    pickLocale(code) {
+      setLocale(code);
+      this.langMenuOpen = false;
+    },
+    toggleLangMenu() {
+      this.langMenuOpen = !this.langMenuOpen;
+
+      if (this.langMenuOpen) {
+        this.themePanelOpen = false;
+      }
+    },
     pickMode(id) {
       setMode(id);
       this.themeMode = id;
@@ -197,6 +237,12 @@ export default {
         this.themePanelOpen = false;
       }
 
+      // 语言下拉：点外面就收起（展开按钮自己 stop 掉了）
+      const langWrap = this.$refs.langWrap;
+      if (this.langMenuOpen && langWrap && !langWrap.contains(event.target)) {
+        this.langMenuOpen = false;
+      }
+
       // 移动端控件面板：点面板外面就收起（按钮自己 stop 掉了）
       if (this.headerMenuOpen) {
         const actions = document.querySelector('.header-actions');
@@ -211,6 +257,7 @@ export default {
       if (event.key === 'Escape') {
         this.themePanelOpen = false;
         this.headerMenuOpen = false;
+        this.langMenuOpen = false;
       }
     },
     goHome() {
@@ -224,7 +271,9 @@ export default {
     toggleHeaderMenu() {
       this.headerMenuOpen = !this.headerMenuOpen;
 
-      if (!this.headerMenuOpen) {
+      if (this.headerMenuOpen) {
+        this.langMenuOpen = false;
+      } else {
         this.themePanelOpen = false;
       }
     }

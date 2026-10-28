@@ -387,17 +387,17 @@ export class Server {
     background: #ffffff;
     overflow: hidden;
   }
-  .lang-btn, .seg-btn {
+  .seg-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 2.25rem;
-    padding: 0 0.6rem;
+    min-height: 1.9rem;
+    padding: 0 0.5rem;
     background: transparent;
     border: 0;
     color: #6b7a86;
     font: inherit;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 500;
     line-height: 1.2;
     white-space: nowrap;
@@ -405,9 +405,34 @@ export class Server {
     cursor: pointer;
     transition: background-color .16s ease, color .16s ease;
   }
-  .lang-btn + .lang-btn, .seg + .seg { border-left: 1px solid #aab7b8; }
-  .lang-btn:hover, .seg-btn:hover { background: #eef3f2; color: #2c3e50; text-decoration: none; }
-  .lang-btn.active, .seg-btn.active {
+  /* 语言：只有一个显示当前语言的下拉按钮，点开跳出语言列表 */
+  .lang-switch {
+    position: relative;
+    border-color: #aab7b8;
+    background: #ffffff;
+  }
+  .lang-switch select {
+    appearance: none;
+    -webkit-appearance: none;
+    min-height: 1.9rem;
+    padding: 0 1.5rem 0 0.5rem;
+    border: 0;
+    background: transparent;
+    color: #2c3e50;
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    line-height: 1.2;
+    cursor: pointer;
+    background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position: calc(100% - 0.8rem) 50%, calc(100% - 0.55rem) 50%;
+    background-size: 0.28rem 0.28rem, 0.28rem 0.28rem;
+    background-repeat: no-repeat;
+  }
+  .lang-switch select:focus-visible { outline: 2px solid #0d9488; outline-offset: -2px; }
+  .seg-btn + .seg-btn { border-left: 1px solid #aab7b8; }
+  .seg-btn:hover { background: #eef3f2; color: #2c3e50; text-decoration: none; }
+  .seg-btn.active {
     background: color-mix(in srgb, #0d9488 12%, transparent);
     color: #0d9488;
     font-weight: 700;
@@ -415,13 +440,13 @@ export class Server {
   }
   .seg-btn svg { width: 1rem; height: 1rem; }
   .seg select {
-    min-height: 2.25rem;
+    min-height: 1.9rem;
     padding: 0 0.5rem;
     border: 0;
     background: transparent;
     color: #2c3e50;
     font: inherit;
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     cursor: pointer;
   }
   .seg select:focus-visible { outline: 2px solid #0d9488; outline-offset: -2px; }
@@ -432,12 +457,14 @@ export class Server {
   }
   @media (max-width: 640px) {
     .header .brand { display: none; }
-    .lang-btn, .seg-btn { padding: 0 0.45rem; font-size: 0.8rem; }
-    .seg select { padding: 0 0.3rem; font-size: 0.8rem; max-width: 5.5rem; }
+    .seg-btn { padding: 0 0.45rem; font-size: 0.78rem; }
+    .lang-switch select { padding: 0 1.35rem 0 0.45rem; font-size: 0.78rem; }
+    .seg select { padding: 0 0.3rem; font-size: 0.78rem; max-width: 5.5rem; }
   }
   @media (max-width: 360px) {
     .header { padding: 0.5rem; gap: 0.25rem; }
-    .lang-btn, .seg-btn { min-height: 2rem; padding: 0 0.35rem; font-size: 0.75rem; }
+    .seg-btn { min-height: 1.75rem; padding: 0 0.35rem; font-size: 0.75rem; }
+    .lang-switch select { min-height: 1.75rem; padding: 0 1.25rem 0 0.35rem; font-size: 0.75rem; }
     .seg select { padding: 0 0.2rem; font-size: 0.75rem; max-width: 4.6rem; }
   }
   a, a:visited, a:active {
@@ -579,32 +606,6 @@ export class Server {
     margin-left: auto;
   }
   .site-header .nav-links a { padding: 0 0.5rem; }
-  .lang-switch {
-    display: flex;
-    align-items: center;
-    flex: none;
-    margin-left: 0.5rem;
-    border: 1px solid #aab7b8;
-    border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.6);
-    overflow: hidden;
-  }
-  .lang-switch .lang-btn {
-    display: block;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-    line-height: 1.2;
-    color: #2c3e50;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-  .lang-switch .lang-btn + .lang-btn { border-left: 1px solid #aab7b8; }
-  .lang-switch a.lang-btn:hover { background-color: rgba(0, 0, 0, 0.06); color: #2c3e50; }
-  .lang-switch .lang-btn.active {
-    background-color: rgba(44, 62, 80, 0.16);
-    font-weight: 700;
-    cursor: default;
-  }
   @media (max-width: 768px) {
     .page-icon { display: none; }
     /* 和首页一致：窄屏只留站名 + 语言切换 */
@@ -676,10 +677,11 @@ export class Server {
   .brand-icon { color: var(--accent); }
   .banner h3 { color: var(--muted); }
   .lang-switch, .seg { border-color: var(--border); background: var(--surface); }
-  .lang-btn, .seg-btn { color: var(--muted); }
-  .lang-btn + .lang-btn, .seg + .seg { border-left-color: var(--border); }
-  .lang-btn:hover, .seg-btn:hover { background: var(--surface-2); color: var(--text); }
-  .lang-btn.active, .seg-btn.active { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+  .lang-switch select, .seg-btn { color: var(--muted); }
+  .seg-btn + .seg-btn { border-left-color: var(--border); }
+  .lang-switch select:hover, .seg-btn:hover { background: var(--surface-2); color: var(--text); }
+  .seg-btn.active { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+  .lang-switch select option { background: var(--surface); color: var(--text); }
   .seg select { color: var(--text); }
   .seg select option { background: var(--surface); color: var(--text); }
   a, a:visited, a:active, .dl { color: var(--link); }
@@ -699,12 +701,7 @@ export class Server {
   .empty { background: var(--surface); border-color: var(--border); border-radius: var(--radius, 6px); }
   pre, code { background: var(--code-bg); }
   pre { border-color: var(--border); border-radius: var(--radius, 4px); }
-  .notes { background: var(--surface-2); border-color: var(--border); color: var(--text); border-radius: var(--radius, 10px); }
-  .lang-switch { border-color: var(--border); border-radius: var(--radius, 4px); background-color: color-mix(in srgb, var(--surface) 60%, transparent); }
-  .lang-switch .lang-btn { color: var(--text); }
-  .lang-switch .lang-btn + .lang-btn { border-left-color: var(--border); }
-  .lang-switch a.lang-btn:hover { background-color: color-mix(in srgb, var(--text) 10%, transparent); color: var(--text); }
-  .lang-switch .lang-btn.active { background-color: color-mix(in srgb, var(--text) 16%, transparent); }`);
+  .notes { background: var(--surface-2); border-color: var(--border); color: var(--text); border-radius: var(--radius, 10px); }`);
 
         return "  <style>\n" + out.join("\n") + "\n  </style>";
     }
@@ -744,11 +741,13 @@ export class Server {
      */
     protected static pageShell(zh: boolean, title: string, body: string, basePath: string = "/"): string {
 
-        const other = zh ? "en" : "zh";
+        // 语言下拉：按钮上只显示当前语言，点开是语言列表；切换时写 cookie 再带 ?lang= 重新请求本页
+        const here = basePath || "/";
 
-        const otherLabel = zh ? "English" : "中文";
+        // 拼进 <script> 里：把 < 转义掉，避免路径里带 </script> 时提前闭合
+        const hereJs = JSON.stringify(here).replace(/</g, "\\u003c");
 
-        const here = Server.escapeHtml(basePath || "/");
+        const langLabel = zh ? "语言" : "Language";
 
         let html = `<!DOCTYPE html>
 <html lang="${zh ? "zh-CN" : "en"}">
@@ -767,7 +766,10 @@ ${Server.themeCss}
   <h1><span class="brand-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></span><a class="brand" href="/">${Server.siteNameFor(zh)}</a></h1>
   <div class="banner"><h3>${Server.headerBanner(zh)}</h3></div>
   <div class="right">
-    <span class="lang-switch" role="group" aria-label="${zh ? "语言" : "Language"}"><span class="lang-btn active" aria-current="true">${zh ? "中文" : "English"}</span><a class="lang-btn" href="${here}" data-lang="${other}" title="${zh ? "切换到 English" : "Switch to 中文"}">${otherLabel}</a></span>
+    <span class="lang-switch" title="${langLabel}"><select id="lang-pick" aria-label="${langLabel}">
+      <option value="en"${zh ? "" : " selected"}>English</option>
+      <option value="zh"${zh ? " selected" : ""}>中文</option>
+    </select></span>
     <span class="seg" role="group" aria-label="${zh ? "明暗模式" : "Colour mode"}">
       <button type="button" class="seg-btn" data-mode="auto" title="${zh ? "跟随系统" : "System"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor" stroke="none"/></svg></button>
       <button type="button" class="seg-btn" data-mode="light" title="${zh ? "浅色" : "Light"}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
@@ -790,15 +792,16 @@ ${body}
     var btns = [].slice.call(document.querySelectorAll('.seg-btn[data-mode]'));
     var sel = document.getElementById('skin-pick');
 
-    // 语言：写 cookie 后跳转，地址栏不保留 ?lang=
-    [].slice.call(document.querySelectorAll('.lang-btn[data-lang]')).forEach(function (a) {
-      a.addEventListener('click', function () {
-        var code = a.getAttribute('data-lang');
-        try {
-          document.cookie = 'notepad_lang=' + code + ';path=/;max-age=31536000;SameSite=Lax';
-          localStorage.setItem('locale', code);
-        } catch (e) {}
-      });
+    // 语言：下拉选完先写 cookie，再带 ?lang= 重新请求本页（服务端据此输出对应语言）
+    var langPick = document.getElementById('lang-pick');
+    var LANG_PATH = ${hereJs};
+    if (langPick) langPick.addEventListener('change', function () {
+      var code = langPick.value;
+      try {
+        document.cookie = 'notepad_lang=' + code + ';path=/;max-age=31536000;SameSite=Lax';
+        localStorage.setItem('locale', code);
+      } catch (e) {}
+      window.location.href = LANG_PATH + (LANG_PATH.indexOf('?') < 0 ? '?' : '&') + 'lang=' + encodeURIComponent(code);
     });
 
     // 从带 ?lang= 的链接进来时，把参数从地址栏去掉（服务端已按它选好语言并写了 cookie）

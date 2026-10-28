@@ -96,13 +96,14 @@ html[data-skin="fluid"] {
         }
 
         .seg-btn,
-        .lang-btn {
+        .lang-current {
             min-height: 2.5rem;   /* 40px+，手指点得中 */
             padding: 0 0.7rem;
         }
 
         /* 浮层式面板在窄屏容易顶到边缘，改成贴底抽屉更顺手 */
-        .theme-panel {
+        .theme-panel,
+        .lang-menu {
             position: fixed;
             left: 0.5rem;
             right: 0.5rem;
@@ -111,6 +112,10 @@ html[data-skin="fluid"] {
             width: auto;
             max-height: min(72vh, 34rem);
             border-radius: 20px;
+        }
+
+        .lang-menu {
+            max-height: 50vh;
         }
 
         .theme-grid {

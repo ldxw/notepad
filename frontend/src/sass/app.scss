@@ -333,7 +333,14 @@ nav.nav-links {
 /* 页头控件（语言 / 主题）—— 共用同一套分段控件观感                                */
 /* ========================================================================== */
 
-.lang-switch,
+/* 语言：只有一个显示当前语言的按钮，点开是下拉菜单（不再是并排分段） */
+.lang-switch {
+  @apply flex items-center shrink-0;
+  position: relative;
+  margin-left: 0.5rem;
+}
+
+/* 明暗模式：仍然是并排分段控件 */
 .seg {
   @apply flex items-center shrink-0;
   margin-left: 0.5rem;
@@ -341,43 +348,145 @@ nav.nav-links {
   border-radius: 8px;
   background-color: var(--surface);
   overflow: hidden;
+}
 
-  .lang-btn,
-  .seg-btn {
-    @apply text-sm;
-    min-height: 2.25rem;
-    padding: 0 0.6rem;
-    background: transparent;
-    border: 0;
-    cursor: pointer;
-    color: var(--muted);
-    font-weight: 500;
-    line-height: 1.2;
-    white-space: nowrap;
-    transition: background-color .16s ease, color .16s ease;
+/* 语言按钮与分段按钮共用同一套尺寸/观感 —— 尺寸收到和页头文字同一量级，不显笨重 */
+.lang-current,
+.seg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-height: 1.9rem;
+  padding: 0 0.5rem;
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .16s ease, color .16s ease;
 
-    & + .lang-btn,
-    & + .seg-btn {
-      border-left: 1px solid var(--border);
-    }
-
-    &:hover {
-      background-color: var(--surface-2);
-      color: var(--text);
-    }
-
-    &.active {
-      background-color: color-mix(in srgb, var(--accent) 12%, transparent);
-      color: var(--accent);
-      font-weight: 700;
-      cursor: default;
-    }
+  &:hover {
+    background-color: var(--surface-2);
+    color: var(--text);
   }
 
   svg {
     display: block;
-    width: 1.05rem;
-    height: 1.05rem;
+    width: 0.95rem;
+    height: 0.95rem;
+  }
+}
+
+/* 分段控件里的按钮是拼接的：去掉圆角，只留分隔线 */
+.seg-btn {
+  border-radius: 0;
+
+  & + .seg-btn {
+    border-left: 1px solid var(--border);
+  }
+
+  &.active {
+    background-color: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+    font-weight: 700;
+    cursor: default;
+  }
+}
+
+/* 语言按钮自己带边框，像个下拉框 */
+.lang-switch {
+  .lang-current {
+    border: 1px solid var(--border);
+    background-color: var(--surface);
+
+    &.open {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+  }
+
+  .lang-caret {
+    display: inline-flex;
+    width: 0.75rem;
+    height: 0.75rem;
+    opacity: .7;
+    transition: transform .16s ease;
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  }
+
+  .lang-current.open .lang-caret {
+    transform: rotate(180deg);
+  }
+}
+
+/* 语言下拉菜单：从按钮下方展开，选中项带勾 */
+.lang-menu {
+  position: absolute;
+  top: calc(100% + .4rem);
+  right: 0;
+  z-index: 50;
+  min-width: 9rem;
+  margin: 0;
+  padding: .3rem;
+  list-style: none;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 10px);
+  box-shadow: var(--shadow-pop);
+  text-align: left;
+
+  li {
+    margin: 0;
+  }
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    width: 100%;
+    padding: .45rem .6rem;
+    background: transparent;
+    border: 0;
+    border-radius: 7px;
+    color: var(--text);
+    font: inherit;
+    font-size: .85rem;
+    line-height: 1.3;
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+
+    &:hover {
+      background-color: var(--surface-2);
+    }
+
+    &.active {
+      color: var(--accent);
+      font-weight: 700;
+    }
+  }
+
+  .lang-check {
+    display: inline-flex;
+    width: .9rem;
+    height: .9rem;
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
   }
 }
 
@@ -573,7 +682,7 @@ nav.nav-links {
 /* 颜色过渡：只在系统允许动效时启用 */
 @media (prefers-reduced-motion: no-preference) {
   body, .header, .note-card, .site-footer, .theme-panel, .theme-card,
-  input[type=text], textarea, .btn, .lang-btn, .seg-btn {
+  input[type=text], textarea, .btn, .lang-current, .seg-btn, .lang-menu button {
     transition: background-color .16s ease, color .16s ease, border-color .16s ease;
   }
 }
@@ -607,22 +716,25 @@ nav.nav-links {
       display: flex;
     }
 
-    .lang-switch,
     .seg {
       width: 100%;
       margin-left: 0;
     }
 
-    .lang-switch .lang-btn,
     .seg .seg-btn {
       flex: 1;
     }
   }
 
-  .lang-switch .lang-btn,
-  .seg .seg-btn {
+  .lang-current,
+  .seg-btn {
     padding: 0 0.45rem;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
+  }
+
+  /* 下拉菜单在窄屏别超出屏幕 */
+  .lang-menu {
+    min-width: 7.5rem;
   }
 }
 
@@ -634,14 +746,13 @@ nav.nav-links {
     gap: 0.25rem;
   }
 
-  .lang-switch .lang-btn,
-  .seg .seg-btn {
-    min-height: 2rem;
+  .lang-current,
+  .seg-btn {
+    min-height: 1.75rem;
     padding: 0 0.35rem;
     font-size: 0.75rem;
   }
 
-  .lang-switch .lang-btn + .lang-btn,
   .seg .seg-btn + .seg-btn {
     border-left-width: 1px;
   }

@@ -54,8 +54,7 @@ html[data-skin="glass"] {
     .header,
     .note-card,
     .theme-panel,
-    .lang-switch,
-    .seg {
+    .lang-menu {
         background-color: var(--glass-surface, rgba(255, 255, 255, .08));
         border-color: var(--glass-border, rgba(255, 255, 255, .18));
         backdrop-filter: blur(16px) saturate(1.25);
@@ -107,14 +106,21 @@ html[data-skin="glass"] {
         }
     }
 
+    /* 控件外壳给圆角；单独的语言按钮/菜单也一起圆 */
     .seg,
-    .lang-switch {
+    .lang-current,
+    .lang-menu {
         border-radius: 14px;
+    }
 
-        .seg-btn:hover,
-        .lang-btn:hover {
-            background-color: rgba(255, 255, 255, .12);
-        }
+    .seg-btn:hover,
+    .lang-current:hover,
+    .lang-menu button:hover {
+        background-color: rgba(255, 255, 255, .12);
+    }
+
+    .lang-menu button {
+        border-radius: 10px;
     }
 
     /* ---- 按钮：玻璃底 + 一点强调色 ---- */
