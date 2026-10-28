@@ -489,6 +489,89 @@ nav.nav-links {
 }
 
 /* ========================================================================== */
+/* 编辑器：多设备同步提示条（另一台设备改了这篇笔记时出现）                        */
+/* ========================================================================== */
+
+.sync-banner {
+  @apply flex items-center;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 0.75rem;
+  padding: 0.6rem 0.75rem 0.6rem 1rem;
+  background-color: color-mix(in srgb, var(--accent) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius, 8px);
+  color: var(--text);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.sync-banner-text {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.sync-banner-actions {
+  @apply flex items-center shrink-0;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.sync-btn {
+  @apply text-sm;
+  min-height: 2.25rem;
+  padding: 0 0.8rem;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color .16s ease, color .16s ease, border-color .16s ease;
+
+  &:hover {
+    background-color: var(--surface-2);
+    color: var(--text);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ring, currentColor);
+    outline-offset: 2px;
+  }
+}
+
+.sync-btn-primary {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--btn-text, #fff);
+  font-weight: 600;
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--accent) 88%, black);
+    border-color: color-mix(in srgb, var(--accent) 88%, black);
+    color: var(--btn-text, #fff);
+  }
+}
+
+@media (max-width: 640px) {
+  .sync-banner {
+    padding: 0.55rem 0.6rem 0.55rem 0.75rem;
+  }
+
+  .sync-banner-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .sync-btn {
+    flex: 1;
+  }
+}
+
+/* ========================================================================== */
 /* 内容块                                                                      */
 /* ========================================================================== */
 
@@ -573,7 +656,7 @@ nav.nav-links {
 /* 颜色过渡：只在系统允许动效时启用 */
 @media (prefers-reduced-motion: no-preference) {
   body, .header, .note-card, .site-footer, .theme-panel, .theme-card,
-  input[type=text], textarea, .btn, .lang-btn, .seg-btn {
+  input[type=text], textarea, .btn, .lang-btn, .seg-btn, .sync-btn {
     transition: background-color .16s ease, color .16s ease, border-color .16s ease;
   }
 }

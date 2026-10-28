@@ -6,6 +6,9 @@ class Api {
 
         const options = {
             method: 'GET',
+            // 轮询读取：任何中间层都不许缓存，否则会一直拿到旧密文。
+            // 后端也会发 Cache-Control: no-store，这里再兜一层（某些代理只看请求头）。
+            cache: 'no-store'
         }
 
         return fetch('/api/notes/' + code, options)

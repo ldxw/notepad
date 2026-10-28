@@ -10,6 +10,19 @@ export class Server {
 
     public static readonly PORT_DEFAULT: number = 3000;
 
+    /**
+     * 单篇笔记的请求体上限。_不能_ 拿明文字数来估：
+     * 前端 textarea 允许 40000 个字符（Editor.vue 的 TEXT_MAX_LEN），
+     * 但发上来的是加密信封：
+     *   40000 字 × 3 字节（UTF-8 中文/日文/韩文） = 120000 字节
+     *   → AES-CBC + PKCS7 补齐到 16 的倍数
+     *   → 密文再转 hex，一个字节变两个字符 → 240000 个字符
+     * 加上 iv（32 字符）和 JSON 信封的字段名，最坏情况约 240 KB。
+     * 原来的 "10kb" 连 2000 个汉字都装不下，稍长的笔记就是 413。
+     * 256kb 留了约 7% 余量，同时仍然是一个明确的、不会被滥用的上限。
+     */
+    protected static readonly NOTE_BODY_LIMIT: string = "256kb";
+
     public app: Application;
     protected router: Router;
 
@@ -34,15 +47,18 @@ export class Server {
 
     protected enablePost() {
 
-        // 10 kilobytes of text MAX!! - ~10K chars, 5-6 word pages
+        // 表单编码的请求（目前没有用到，留一个同样宽松的上限，别让它比笔记接口更严）
         this.app.use(express.urlencoded({
             extended: true,
-            limit: "10kb"
+            limit: Server.NOTE_BODY_LIMIT
         }));
 
         // Expects: Content-Type: "text/plain"
+        // 笔记正文走的就是这一条：上限见 NOTE_BODY_LIMIT（按加密后的信封体积算）
         this.app.use(express.text({
-            limit: "10kb"
+            limit: Server.NOTE_BODY_LIMIT,
+            // 显式声明只吃 text/plain：默认配置已经这样，但写清楚免得以后被人改成 */*
+            type: "text/plain"
         }));
     }
 

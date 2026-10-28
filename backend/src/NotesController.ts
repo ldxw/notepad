@@ -21,6 +21,12 @@ export class NotesController {
 
         const contents = Database.get(id);
 
+        // 客户端每 3 秒轮询一次这个地址。任何一层（浏览器、CDN、反向代理）缓存了
+        // 这份响应，另一端就永远看不到新内容，所以这里必须显式禁掉缓存。
+        // ETag 也关掉：Express 默认会按内容算 ETag 并发 304，而这里要的就是每次都读全文。
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.setHeader('content-type', 'text/plain').send(contents || "");
     }
 

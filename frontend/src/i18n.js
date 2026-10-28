@@ -102,7 +102,10 @@ export const messages = {
         "editor.deleteForever": "Delete Forever",
         "editor.saveFailed": "Something went wrong during saving: ",
         "editor.confirmDelete": "Are you sure?? This action cannot be undone",
-        "editor.deleteFailed": "Failed to delete"
+        "editor.deleteFailed": "Failed to delete",
+        "editor.remoteUpdate": "Another device saved a newer version of this note.",
+        "editor.remoteApply": "Load newest",
+        "editor.remoteKeep": "Keep mine"
     },
 
     zh: {
@@ -187,7 +190,10 @@ export const messages = {
         "editor.deleteForever": "永久删除",
         "editor.saveFailed": "保存时出错了：",
         "editor.confirmDelete": "确定吗？此操作无法撤销",
-        "editor.deleteFailed": "删除失败"
+        "editor.deleteFailed": "删除失败",
+        "editor.remoteUpdate": "另一台设备保存了这个笔记的更新版本。",
+        "editor.remoteApply": "载入最新",
+        "editor.remoteKeep": "保留我的"
     }
 };
 
