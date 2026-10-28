@@ -429,57 +429,65 @@ nav.nav-links {
   }
 }
 
-/* 语言下拉菜单：从按钮下方展开，选中项带勾 */
-.lang-menu {
-  position: absolute;
-  top: calc(100% + .4rem);
-  right: 0;
-  z-index: 50;
-  min-width: 9rem;
+/* 语言面板：直接复用主题面板那套壳（.theme-panel），只收窄宽度、换列表内容。
+   内边距跟主题面板保持一致（.75rem），二者看起来才是同一个东西。
+   双类名是为了压过后面 .theme-panel 的 width / max-height（同优先级时后者会赢）。 */
+.theme-panel.lang-panel {
+  width: auto;
+  /* 够放下标题（「切换语言」/「Switch language」）不折行，又不至于像主题面板那么宽 */
+  min-width: 11rem;
+  max-height: none;
+  overflow: visible;
+}
+
+.lang-list {
   margin: 0;
-  padding: .3rem;
+  padding: 0;
   list-style: none;
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: var(--radius, 10px);
-  box-shadow: var(--shadow-pop);
-  text-align: left;
 
   li {
     margin: 0;
   }
 
-  button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .5rem;
-    width: 100%;
-    padding: .45rem .6rem;
-    background: transparent;
-    border: 0;
-    border-radius: 7px;
-    color: var(--text);
-    font: inherit;
-    font-size: .85rem;
-    line-height: 1.3;
-    text-align: left;
-    white-space: nowrap;
-    cursor: pointer;
+  & > li + li {
+    margin-top: .25rem;
+  }
+}
 
-    &:hover {
-      background-color: var(--surface-2);
-    }
+/* 语言选项与主题卡片同一套观感：整行可点、选中描边加粗 */
+.lang-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  width: 100%;
+  padding: .4rem .55rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius, 10px);
+  color: var(--text);
+  font: inherit;
+  font-size: .85rem;
+  line-height: 1.4;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color .16s ease, background-color .16s ease;
 
-    &.active {
-      color: var(--accent);
-      font-weight: 700;
-    }
+  &:hover {
+    border-color: var(--border);
+    background-color: var(--surface-2);
+  }
+
+  &.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 700;
   }
 
   .lang-check {
     display: inline-flex;
+    flex: none;
     width: .9rem;
     height: .9rem;
 
@@ -682,7 +690,7 @@ nav.nav-links {
 /* 颜色过渡：只在系统允许动效时启用 */
 @media (prefers-reduced-motion: no-preference) {
   body, .header, .note-card, .site-footer, .theme-panel, .theme-card,
-  input[type=text], textarea, .btn, .lang-current, .seg-btn, .lang-menu button {
+  input[type=text], textarea, .btn, .lang-current, .seg-btn, .lang-option {
     transition: background-color .16s ease, color .16s ease, border-color .16s ease;
   }
 }
@@ -732,9 +740,9 @@ nav.nav-links {
     font-size: 0.78rem;
   }
 
-  /* 下拉菜单在窄屏别超出屏幕 */
-  .lang-menu {
-    min-width: 7.5rem;
+  /* 下拉菜单在窄屏别超出屏幕（标题要能一行放下） */
+  .lang-panel {
+    min-width: 9rem;
   }
 }
 

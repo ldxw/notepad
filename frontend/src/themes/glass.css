@@ -53,8 +53,7 @@ html[data-skin="glass"] {
     /* ---- 玻璃表面 ---- */
     .header,
     .note-card,
-    .theme-panel,
-    .lang-menu {
+    .theme-panel {
         background-color: var(--glass-surface, rgba(255, 255, 255, .08));
         border-color: var(--glass-border, rgba(255, 255, 255, .18));
         backdrop-filter: blur(16px) saturate(1.25);
@@ -108,18 +107,17 @@ html[data-skin="glass"] {
 
     /* 控件外壳给圆角；单独的语言按钮/菜单也一起圆 */
     .seg,
-    .lang-current,
-    .lang-menu {
+    .lang-current {
         border-radius: 14px;
     }
 
     .seg-btn:hover,
     .lang-current:hover,
-    .lang-menu button:hover {
+    .lang-option:hover {
         background-color: rgba(255, 255, 255, .12);
     }
 
-    .lang-menu button {
+    .lang-option {
         border-radius: 10px;
     }
 

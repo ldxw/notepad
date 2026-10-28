@@ -27,18 +27,23 @@
                   <span class="lang-caret" aria-hidden="true" v-html="caretIcon"></span>
               </button>
 
-              <ul class="lang-menu" role="listbox" :aria-label="t('lang.label')" v-if="langMenuOpen">
-                  <li v-for="l in locales" :key="l.code" role="none">
-                      <button type="button"
-                              role="option"
-                              :class="{active: l.code === currentLocale}"
-                              :aria-selected="l.code === currentLocale ? 'true' : 'false'"
-                              @click="pickLocale(l.code)">
-                          <span>{{ l.label }}</span>
-                          <span class="lang-check" aria-hidden="true" v-html="l.code === currentLocale ? checkIcon : ''"></span>
-                      </button>
-                  </li>
-              </ul>
+              <!-- 语言面板：与主题面板同一套外观（标题 + 列表），展开在按钮正下方 -->
+              <div class="theme-panel lang-panel" v-if="langMenuOpen">
+                  <div class="theme-panel-title">{{ t('lang.switch') }}</div>
+                  <ul class="lang-list" role="listbox" :aria-label="t('lang.label')">
+                      <li v-for="l in locales" :key="l.code" role="none">
+                          <button type="button"
+                                  class="lang-option"
+                                  role="option"
+                                  :class="{active: l.code === currentLocale}"
+                                  :aria-selected="l.code === currentLocale ? 'true' : 'false'"
+                                  @click="pickLocale(l.code)">
+                              <span>{{ l.label }}</span>
+                              <span class="lang-check" aria-hidden="true" v-html="l.code === currentLocale ? checkIcon : ''"></span>
+                          </button>
+                      </li>
+                  </ul>
+              </div>
           </div>
 
       <button type="button"
@@ -73,7 +78,7 @@
                       :aria-label="t('theme.pick')"
                       aria-haspopup="true"
                       :aria-expanded="themePanelOpen ? 'true' : 'false'"
-                      @click.stop="themePanelOpen = !themePanelOpen"
+                      @click.stop="toggleThemePanel()"
                       v-html="paletteIcon"></button>
 
               <div v-if="themePanelOpen" class="theme-panel">
@@ -214,8 +219,16 @@ export default {
     toggleLangMenu() {
       this.langMenuOpen = !this.langMenuOpen;
 
+      // 两个浮层互斥：开一个就收起另一个，避免叠在一起
       if (this.langMenuOpen) {
         this.themePanelOpen = false;
+      }
+    },
+    toggleThemePanel() {
+      this.themePanelOpen = !this.themePanelOpen;
+
+      if (this.themePanelOpen) {
+        this.langMenuOpen = false;
       }
     },
     pickMode(id) {
