@@ -101,8 +101,9 @@ html[data-skin="fluid"] {
             padding: 0 0.7rem;
         }
 
-        /* 浮层式面板在窄屏容易顶到边缘，改成贴底抽屉更顺手 */
-        .theme-panel {
+        /* 浮层式面板在窄屏容易顶到边缘，改成贴底抽屉更顺手。
+           语言面板只有两三项，抽屉会显得莫名其妙，仍然贴在按钮正下方 */
+        .theme-panel:not(.lang-panel) {
             position: fixed;
             left: 0.5rem;
             right: 0.5rem;
@@ -111,11 +112,6 @@ html[data-skin="fluid"] {
             width: auto;
             max-height: min(72vh, 34rem);
             border-radius: 20px;
-        }
-
-        /* 语言面板条目少，抽屉不用占太高 */
-        .lang-panel {
-            max-height: 50vh;
         }
 
         .theme-grid {
