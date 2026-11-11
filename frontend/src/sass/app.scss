@@ -134,6 +134,12 @@ p {
 
 .header {
   @apply flex items-center;
+  /* 页头尺寸刻度：标题、品牌图标、所有控件都从这几个值取值，断点只改这里。
+     这样语言按钮、主题分段、"更多设置"开关永远同高，标题与图标同步缩放。 */
+  --header-ctl-h: 1.9rem;      /* 控件外框高度（含边框） */
+  --header-title: 1.15rem;     /* 站名字号 */
+  --header-brand-icon: 1.25rem;
+  --header-toggle-icon: 1.05rem;
   padding: 0.6rem 1rem;
   background-color: var(--header-bg);
   border-bottom: 1px solid var(--border);
@@ -145,11 +151,13 @@ p {
 
   > h1 {
     @apply mb-0;
-    font-size: 1.15rem;
+    font-size: var(--header-title);
     font-weight: 700;
     display: flex;
     align-items: center;
     gap: 0.4rem;
+    /* 标题与控件同一中心线：行高收到和控件一致，不靠 margin 撑 */
+    line-height: 1.2;
   }
 
   > h1 > a {
@@ -164,15 +172,16 @@ p {
 
   .brand-icon {
     display: inline-flex;
-    width: 1.25rem;
-    height: 1.25rem;
+    width: var(--header-brand-icon);
+    height: var(--header-brand-icon);
     color: var(--accent);
     flex-shrink: 0;
   }
 
   .doc-id {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.85rem;
+    /* 跟着标题走，比标题小一档 */
+    font-size: calc(var(--header-title) - 0.3rem);
     font-weight: 500;
     color: var(--muted);
   }
@@ -364,6 +373,9 @@ nav.nav-links {
 .seg {
   @apply flex items-center shrink-0;
   margin-left: 0.5rem;
+  /* 高度用同一刻度并对齐到按钮：边框算在高度里，避免比语言按钮高 2px */
+  box-sizing: border-box;
+  height: var(--header-ctl-h);
   border: 1px solid var(--border);
   border-radius: 8px;
   background-color: var(--surface);
@@ -377,7 +389,9 @@ nav.nav-links {
   align-items: center;
   justify-content: center;
   gap: 0.25rem;
-  min-height: 1.9rem;
+  /* 高度与 .seg 完全一致：box-sizing + 边框算在高度内 */
+  box-sizing: border-box;
+  height: var(--header-ctl-h);
   padding: 0 0.5rem;
   background: transparent;
   border: 0;
@@ -406,6 +420,8 @@ nav.nav-links {
 /* 分段控件里的按钮是拼接的：去掉圆角，只留分隔线 */
 .seg-btn {
   border-radius: 0;
+  /* 外框由 .seg 负责，内部按钮不重复算边框高度 */
+  height: 100%;
 
   & + .seg-btn {
     border-left: 1px solid var(--border);
@@ -449,15 +465,24 @@ nav.nav-links {
   }
 }
 
-/* 语言面板：直接复用主题面板那套壳（.theme-panel），只收窄宽度、换列表内容。
-   内边距跟主题面板保持一致（.75rem），二者看起来才是同一个东西。
-   双类名是为了压过后面 .theme-panel 的 width / max-height（同优先级时后者会赢）。 */
+/* 语言面板：本质是触发按钮的下拉列表，所以不做成"卡片里再放按钮"。
+   面板无边距、行贴边铺满，只有面板外层一圈圆角；行与行之间一条分隔线，
+   选中行用底色高亮（跟分段控件 active 同一套色），而不是再描一圈边。 */
 .theme-panel.lang-panel {
-  width: auto;
-  /* 够放下标题（「切换语言」/「Switch language」）不折行，又不至于像主题面板那么宽 */
-  min-width: 11rem;
+  /* 贴着按钮下沿，读起来是按钮展开的一截 */
+  top: calc(100% + .25rem);
+  /* 居中在触发按钮正下方（.theme-panel 默认 right: 0，这里改回自动再用位移对中） */
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: max-content;
+  /* 永远不窄于触发按钮 */
+  min-width: 100%;
+  padding: 0;
   max-height: none;
-  overflow: visible;
+  overflow: hidden;
+  /* 与触发按钮同款 7px 圆角，尺寸上像同一个控件的两个状态 */
+  border-radius: 8px;
 }
 
 .lang-list {
@@ -469,38 +494,41 @@ nav.nav-links {
     margin: 0;
   }
 
+  /* 下拉列表的分隔线，比每个选项自己描边干净 */
   & > li + li {
-    margin-top: .25rem;
+    margin-top: 0;
+    border-top: 1px solid var(--border);
   }
 }
 
-/* 语言选项与主题卡片同一套观感：整行可点、选中描边加粗 */
+/* 语言选项 = 触发按钮本身：同高、同内边距、同字号，整行铺满面板。 */
 .lang-option {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: .75rem;
+  gap: .4rem;
   width: 100%;
-  padding: .4rem .55rem;
+  min-height: 1.9rem;
+  padding: 0 .5rem;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: var(--radius, 10px);
+  border: 0;
+  border-radius: 0;
   color: var(--text);
   font: inherit;
-  font-size: .85rem;
-  line-height: 1.4;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.2;
   text-align: left;
   white-space: nowrap;
   cursor: pointer;
-  transition: border-color .16s ease, background-color .16s ease;
+  transition: background-color .16s ease, color .16s ease;
 
   &:hover {
-    border-color: var(--border);
     background-color: var(--surface-2);
   }
 
   &.active {
-    border-color: var(--accent);
+    background-color: color-mix(in srgb, var(--accent) 12%, transparent);
     color: var(--accent);
     font-weight: 700;
   }
@@ -508,8 +536,8 @@ nav.nav-links {
   .lang-check {
     display: inline-flex;
     flex: none;
-    width: .9rem;
-    height: .9rem;
+    width: .8rem;
+    height: .8rem;
 
     svg {
       width: 100%;
@@ -630,12 +658,14 @@ nav.nav-links {
 /* ========================================================================== */
 
 // 站点页脚（首页可见，与 /backups/ 等服务端渲染页同一套配色）
+// 左右内边距与页头共用同一套断点，窄屏下页脚文字边缘与页头内容左边缘对齐；
+// 宽度仍跟着内容栏（46rem），不铺满整行 —— 页头是全宽工具条，页脚是阅读栏的收尾。
 .site-footer {
   width: 100%;
   box-sizing: border-box;
   max-width: 46rem;
   margin: 3rem auto 0;
-  padding: 1.5rem 1rem 0;
+  padding: 1.5rem var(--footer-pad-x, 1rem) 0;
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: 0.8rem;
@@ -718,9 +748,18 @@ nav.nav-links {
 /* 窄屏：页头保持一行，收掉站名文字只留图标，控件压紧 —— 备份页用同一套规则 */
 @media (max-width: 640px) {
   .header {
-    padding-left: 0.75rem;
-    padding-right: 0.75rem;
+    /* 只改刻度，标题/图标/控件同步缩小成一档 */
+    --header-ctl-h: 1.8rem;
+    --header-title: 1.05rem;
+    --header-brand-icon: 1.15rem;
+    --header-toggle-icon: 0.95rem;
+    padding: 0.5rem 0.75rem;
     gap: 0.35rem;
+  }
+
+  /* 页脚跟随页头的水平内边距，文字边缘与页头内容边缘对齐 */
+  .site-footer {
+    --footer-pad-x: 0.75rem;
   }
 
   /* 控件默认收进面板，桌面端仍然全部平铺 */
@@ -760,23 +799,37 @@ nav.nav-links {
     font-size: 0.78rem;
   }
 
-  /* 下拉菜单在窄屏别超出屏幕（标题要能一行放下） */
-  .lang-panel {
-    min-width: 9rem;
+  /* 面板选项始终与触发按钮同尺寸，否则展开后"面板里是另一套控件" */
+  .lang-option {
+    min-height: var(--header-ctl-h);
+    padding: 0 0.45rem;
+    font-size: 0.78rem;
   }
 }
 
 /* 更窄的机器（<=360）：再收一档，保证不横向滚动 */
 @media (max-width: 360px) {
   .header {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+    --header-ctl-h: 1.7rem;
+    --header-title: 1rem;
+    --header-brand-icon: 1.05rem;
+    --header-toggle-icon: 0.9rem;
+    padding: 0.45rem 0.5rem;
     gap: 0.25rem;
+  }
+
+  .site-footer {
+    --footer-pad-x: 0.5rem;
   }
 
   .lang-current,
   .seg-btn {
-    min-height: 1.75rem;
+    padding: 0 0.35rem;
+    font-size: 0.75rem;
+  }
+
+  .lang-option {
+    min-height: var(--header-ctl-h);
     padding: 0 0.35rem;
     font-size: 0.75rem;
   }
@@ -962,8 +1015,9 @@ nav.nav-links {
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 2.25rem;
-  height: 2.25rem;
+  box-sizing: border-box;
+  width: var(--header-ctl-h);
+  height: var(--header-ctl-h);
   margin-left: auto;
   padding: 0;
   background-color: var(--surface);
@@ -974,8 +1028,8 @@ nav.nav-links {
   transition: color .16s ease, border-color .16s ease, background-color .16s ease;
 
   svg {
-    width: 1.15rem;
-    height: 1.15rem;
+    width: var(--header-toggle-icon);
+    height: var(--header-toggle-icon);
   }
 
   &:hover {
@@ -992,10 +1046,17 @@ nav.nav-links {
 @media (max-width: 640px) {
   .header-toggle {
     display: inline-flex;
-    /* 触控热区别太小 */
-    width: 2.5rem;
-    height: 2.5rem;
+    /* 视觉尺寸跟语言按钮同高；触控热区靠伪元素向外扩，不改盒模型 */
+    width: var(--header-ctl-h);
+    height: var(--header-ctl-h);
     margin-left: 0.4rem;
+    position: relative;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: -0.35rem;
+    }
   }
 
   .header-lang {

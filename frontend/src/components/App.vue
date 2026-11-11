@@ -27,9 +27,8 @@
                   <span class="lang-caret" aria-hidden="true" v-html="caretIcon"></span>
               </button>
 
-              <!-- 语言面板：与主题面板同一套外观（标题 + 列表），展开在按钮正下方 -->
+              <!-- 语言面板：与主题面板同一套外观，只留列表、不带标题，展开在按钮正下方 -->
               <div class="theme-panel lang-panel" v-if="langMenuOpen">
-                  <div class="theme-panel-title">{{ t('lang.switch') }}</div>
                   <ul class="lang-list" role="listbox" :aria-label="t('lang.label')">
                       <li v-for="l in locales" :key="l.code" role="none">
                           <button type="button"

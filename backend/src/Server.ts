@@ -592,6 +592,13 @@ export class Server {
   .site-footer p { margin: 0; }
   .site-footer a { color: #a3a1a1; }
   .site-footer a:hover { color: #f42f42; }
+  /* 页脚水平内边距跟随页头：窄屏下文字边缘与页头内容边缘对齐 */
+  @media (max-width: 767px) {
+    .site-footer { padding-left: 0.75rem; padding-right: 0.75rem; }
+  }
+  @media (max-width: 360px) {
+    .site-footer { padding-left: 0.5rem; padding-right: 0.5rem; }
+  }
   /* 页头中间标语（首页同款：居中，窄屏隐藏） */
   .site-header .banner {
     flex: 1 1 auto;
