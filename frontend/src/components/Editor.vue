@@ -17,6 +17,9 @@
           {{ t('editor.words') }}: {{ wordCount }},
           {{ t('editor.characters') }}: <span v-if="selectedCharCount">{{ selectedCharCount }}/</span>{{ charCount }},
           {{ t('editor.lines') }}: {{ lineCount }}
+          <span class="size-bar" :class="{'size-bar-full': isTooLong}">
+            · {{ t('editor.sizeOf', {size: payloadSizeText, max: maxPayloadText}) }}
+          </span>
         </div>
 
         <div>
@@ -24,6 +27,10 @@
         </div>
 
       </div>
+
+      <p v-if="isTooLong" class="limit-warning" role="alert">
+        {{ t('editor.tooLong', {max: maxPayloadText}) }}
+      </p>
 
     </div>
 
@@ -38,9 +45,7 @@ import debounce from "debounce";
 import store from "../store";
 import {SecureStorage} from "../classes/SecureStorage";
 import {t} from "../i18n";
-
-// https://github.com/reddit-archive/reddit/blob/753b17407e9a9dca09558526805922de24133d53/r2/r2/models/link.py#L149
-const TEXT_MAX_LEN = 40000;
+import {NOTE_MAX_BYTES} from "../config";
 
 export default {
   data() {
@@ -51,7 +56,21 @@ export default {
       charCount: 0,
       selectedCharCount: 0,
       wordCount: 0,
-      lineCount: 0
+      lineCount: 0,
+      // 加密后发到服务端的请求体体积，与后端 express.text 的上限对照
+      payloadSize: 0,
+      maxPayload: NOTE_MAX_BYTES
+    }
+  },
+  computed: {
+    isTooLong() {
+      return this.payloadSize > this.maxPayload;
+    },
+    payloadSizeText() {
+      return TextUtil.humanFileSize(this.payloadSize);
+    },
+    maxPayloadText() {
+      return TextUtil.humanFileSize(this.maxPayload);
     }
   },
   watch: {
@@ -60,6 +79,12 @@ export default {
   methods: {
     t,
     writeNow: async function () {
+
+      // 超限时不发请求：服务端会回 413，弹窗比状态栏里那行红字更打断人。
+      // 文本还在编辑框里，删掉一些字就会恢复自动保存。
+      if (this.isTooLong) {
+        return;
+      }
 
       try {
 
@@ -150,10 +175,16 @@ export default {
 
       let str = this.text;
 
+      this.payloadSize = TextUtil.encryptedPayloadSize(str);
+
       if (str) {
         this.wordCount = TextUtil.wordCount(str);
         this.charCount = str.length;
         this.lineCount = TextUtil.lineCount(str);
+      } else {
+        this.wordCount = 0;
+        this.charCount = 0;
+        this.lineCount = 0;
       }
 
     }, 100)

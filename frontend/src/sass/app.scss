@@ -182,6 +182,26 @@ p {
   color: var(--muted);
 }
 
+/* 编辑器状态栏里的体积读数：接近上限时转成警示色 */
+.size-bar {
+  color: var(--muted);
+}
+
+.size-bar-full {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* 超限说明：只在真的存不下时出现，占一整行，不挤状态栏 */
+.limit-warning {
+  margin: -0.5rem 0 1rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius, 10px);
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
 a, a:visited, a:active {
   color: var(--link);
   text-underline-offset: 2px;

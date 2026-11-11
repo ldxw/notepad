@@ -1,6 +1,8 @@
 import fs from "fs";
 import path from "path";
 
+import {Config} from "./config";
+
 /**
  * 运行时的页面元信息（<title> / description / keywords / author / 站点名 / 图标 / 默认语言 / 口令 salt）。
  *
@@ -92,6 +94,20 @@ export class SiteMeta {
         html = SiteMeta.setMeta(html, "color-scheme", "light dark");
 
         return html;
+    }
+
+    /**
+     * 注入单篇笔记的体积上限（NOTE_MAX_BYTES），前端据此在输入时就判断「还能不能存」。
+     * 和请求体解析的上限是同一个配置值，不存在前后端各说一套的情况。
+     * 首页由 apply() 调用；服务端渲染页（/backups/、403）由 Server.pageShell() 调用。
+     */
+    public static applyNoteLimitMeta(html: string, maxBytes: number): string {
+
+        if (!isFinite(maxBytes) || maxBytes <= 0) {
+            return html;
+        }
+
+        return SiteMeta.setMeta(html, "note-max-bytes", String(Math.floor(maxBytes)));
     }
 
     /** 支持 _ZH / _EN 后缀的项：环境变量基础名 → 注入给前端的 meta 名前缀 */
@@ -367,6 +383,9 @@ export class SiteMeta {
 
         // ---------- 主题（与语言无关）----------
         html = SiteMeta.applyThemeMeta(html, env);
+
+        // 单篇笔记的体积上限：和 express 请求体上限是同一个配置值
+        html = SiteMeta.applyNoteLimitMeta(html, Config.noteMaxBytes);
 
         // 引导脚本放在 </head> 之前：此时上面的 site-theme / site-skin 已经注入，
         // 脚本能读到它们；而打包脚本和样式还没执行，所以首帧就是正确的主题。

@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 
 import {SiteMeta} from "./SiteMeta";
+import {Config} from "./config";
 
 const express = require('express');
 
@@ -34,15 +35,20 @@ export class Server {
 
     protected enablePost() {
 
-        // 10 kilobytes of text MAX!! - ~10K chars, 5-6 word pages
+        // 上游原本限 10kb。但一篇笔记发过来的是 AES-256-CBC 密文的 hex 加一个小 JSON 外壳，
+        // 明文的每个字节会变成 2 个 hex 字符 —— 10kb 实际上只够存约 5KB 文字（中文约 1700 字）。
+        // 现在的上限来自 NOTE_MAX_BYTES（见 config.ts，不配就是 32MB 硬上限），前端通过
+        // <meta name="note-max-bytes"> 读到同一个值，在输入时就拦住超限内容。
+        const limit = Config.noteMaxBytes;
+
         this.app.use(express.urlencoded({
             extended: true,
-            limit: "10kb"
+            limit
         }));
 
         // Expects: Content-Type: "text/plain"
         this.app.use(express.text({
-            limit: "10kb"
+            limit
         }));
     }
 
@@ -846,6 +852,9 @@ ${body}
       // 主题：先注入容器默认值的 meta（site-theme / site-skin），再在 </head> 前放引导脚本。
       // 访客自己选过的记在 localStorage 里，脚本会用它盖过默认值；首帧就是对的主题。
       html = SiteMeta.applyThemeMeta(html);
+
+      // 笔记体积上限：/backups/ 与首页用同一个值，跳转过去时提示条不会前后矛盾
+      html = SiteMeta.applyNoteLimitMeta(html, Config.noteMaxBytes);
 
       html = html.replace(/(<\/head>)/i, (_match: string, close: string) => {
           return "    " + SiteMeta.themeBootScript() + "\n" + close;

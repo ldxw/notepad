@@ -33,6 +33,14 @@ services:
       # 界面主题（两轴）：SITE_THEME = auto/light/dark，SITE_SKIN = classic/paper/ocean/...
       SITE_THEME: ${SITE_THEME}
       SITE_SKIN: ${SITE_SKIN}
+
+      # 单篇笔记的体积上限（加密后的字节数），认 480kb / 2m / 1048576 这些写法。
+      # 不设 = 32m（硬上限，约 530 万汉字 / 1600 万英文字符）；写再多也按 32m 处理。
+      # 想收紧时配一个小值，例如 480kb（约 24 万汉字）。前端读同一个值在输入时拦截，
+      # 改完重启容器即生效。前面若有 nginx，client_max_body_size（默认 1m）
+      # 要不小于这里设的值。
+      NOTE_MAX_BYTES: "${NOTE_MAX_BYTES}"
+
       # ── 容器内定时归档（backend/bin/archive.sh）────────────────────────────
       # 容器时区：cron 的小时数按这个时区计算（默认 UTC 会导致时间不对）
       TZ: ${TZ:-Asia/Shanghai}
