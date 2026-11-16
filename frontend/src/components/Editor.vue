@@ -46,6 +46,7 @@ import store from "../store";
 import {SecureStorage} from "../classes/SecureStorage";
 import {t} from "../i18n";
 import {NOTE_MAX_BYTES} from "../config";
+import {begin, update, finish, fail} from "../classes/Progress";
 
 export default {
   data() {
@@ -92,11 +93,20 @@ export default {
         const authKey = store.state.authKey;
         const password = store.state.encryptionKey;
 
-        await SecureStorage.write(authKey, text, password);
+        const task = begin('save');
+
+        try {
+          await SecureStorage.write(authKey, text, password, (f, stage) => update(task, f, stage));
+          finish(task);
+        } catch (ex) {
+          fail(task);
+          throw ex;
+        }
 
       } catch (ex) {
-        const errorString = ex?.message || ex;
-        alert(t('editor.saveFailed') + errorString);
+        // 失败已经由进度条的内联红字提示过了，这里只留一条控制台记录，
+        // 避免弹窗和进度条重复报同一个错。
+        console.warn('[notepad] save failed', ex);
       }
 
     },
@@ -155,17 +165,35 @@ export default {
 
       this.isBusy = true;
 
-      if (newValue) {
-          const password = store.state.encryptionKey;
-          const text = await SecureStorage.read(newValue, password);
+      const task = begin('read');
 
-          this.text = text;
+      try {
 
-      } else {
-        this.text = '';
+        if (newValue) {
+            const password = store.state.encryptionKey;
+            const text = await SecureStorage.read(newValue, password, (f, stage) => update(task, f, stage));
+
+            this.text = text;
+
+            // 大文本写进 textarea（Vue patch 时就地赋值）往往比下载+解密还慢，
+            // 等 DOM 更新完再把进度推到 100%，否则条子停在末尾不动反而像卡住。
+            await this.$nextTick();
+            update(task, 1);
+
+        } else {
+          this.text = '';
+        }
+
+        finish(task);
+
+      } catch (ex) {
+        // 读失败只体现在进度条的红字上；在 watch 回调里 rethrow 会变成
+        // 没人接的 unhandled rejection，控制台里凭空多一条报错。
+        fail(task);
+        console.warn('[notepad] load failed', ex);
+      } finally {
+        this.isBusy = false;
       }
-
-      this.isBusy = false;
 
     }, {
       immediate: true

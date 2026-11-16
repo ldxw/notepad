@@ -2,31 +2,47 @@ import api from "../api";
 import {Util} from "./Util";
 import {Security} from "./Security";
 
+// 进度分段：读取 = 下载 0..0.5、解密 0.5..1；写入 = 加密 0..0.8、上传 0.8..1。
+// 纯文本笔记不解密，下载完直接报 1。
+// 每一段带上阶段名（download / decrypt / encrypt / upload），进度条据此换文案。
+function remap(from, to, onProgress, stage) {
+
+    if (typeof onProgress !== 'function') {
+        return null;
+    }
+
+    return function (fraction) {
+        const f = fraction < 0 ? 0 : (fraction > 1 ? 1 : fraction);
+        onProgress(from + (to - from) * f, stage);
+    };
+}
+
 export class SecureStorage {
 
     /**
      *
      * @param authKey
      * @param password
+     * @param {function(number, string)} [onProgress] 0..1，带阶段名
      * @return {Promise<String>}
      */
-    static async read(authKey, password = '') {
+    static async read(authKey, password = '', onProgress) {
 
-        const httpResponse = await api.get(authKey);
+        const httpResponse = await api.get(authKey, remap(0, 0.5, onProgress, 'download'));
 
         if (httpResponse && Util.isJson(httpResponse)) {
 
             const json = Util.parseJsonQuietly(httpResponse);
-            const alg = json?.alg;
 
-            if (alg === 'AES-256-CBC') {
-                return Security.decrypt(json, password);
+            if (json?.alg === 'AES-256-CBC') {
+                return await Security.decrypt(json, password, remap(0.5, 1, onProgress, 'decrypt'));
             }
-
-            return httpResponse;
         }
 
-        return "";
+        // 纯文本笔记、未知 alg 的 JSON、空响应都原样返回：这里不能吞成空串
+        if (typeof onProgress === 'function') onProgress(1, '');
+
+        return httpResponse || "";
     }
 
     /**
@@ -34,15 +50,16 @@ export class SecureStorage {
      * @param authKey
      * @param contents
      * @param password
+     * @param {function(number, string)} [onProgress] 0..1，带阶段名
      * @returns {Promise<String>}
      */
-    static async write(authKey, contents, password = '') {
+    static async write(authKey, contents, password = '', onProgress) {
 
         // array including alg, iv, cipherText
-        let encrypted = Security.encrypt(contents, password);
+        const encrypted = await Security.encrypt(contents, password, remap(0, 0.8, onProgress, 'encrypt'));
         const json = JSON.stringify(encrypted);
 
-        return api.save(authKey, json);
+        return api.save(authKey, json, remap(0.8, 1, onProgress, 'upload'));
     }
 
     static async remove(authKey) {

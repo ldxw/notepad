@@ -5,6 +5,15 @@ const _state = reactive({
     // switching between keys
     isBusy: false,
 
+    // 读取 / 保存进度：由 classes/Progress.js 写、NoteProgress.vue 读
+    progress: {
+        visible: false,
+        value: 0,
+        phase: '',
+        stage: '',
+        failed: false
+    },
+
     // any app error - invalid URL, invalid auth, etc..
     error: '',
     sessionId: null,
@@ -31,6 +40,14 @@ watch(() => _state.key, (newValue) => {
 const mutations = {
     setSessionId: (id) => {
         _state.sessionId = id
+    },
+
+    /**
+     * 合并写入进度状态。state 对外是 readonly，只能从这里改。
+     * @param {{visible?: boolean, value?: number, phase?: string, stage?: string, failed?: boolean}} patch
+     */
+    setProgress: (patch) => {
+        Object.assign(_state.progress, patch || {});
     },
 
     /**

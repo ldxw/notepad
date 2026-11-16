@@ -102,9 +102,18 @@ export const messages = {
         "editor.sizeOf": "Size: {size} of {max}",
         "editor.tooLong": "This note has reached the limit of what can be saved ({max} once encrypted). What you typed past it is not saved yet — shorten it and automatic saving resumes.",
         "editor.deleteForever": "Delete Forever",
-        "editor.saveFailed": "Something went wrong during saving: ",
         "editor.confirmDelete": "Are you sure?? This action cannot be undone",
-        "editor.deleteFailed": "Failed to delete"
+        "editor.deleteFailed": "Failed to delete",
+        "editor.loading": "Loading {percent}%",
+        "editor.loaded": "Loaded",
+        "editor.saving": "Saving {percent}%",
+        "editor.saved": "Saved",
+        "editor.loadFailedShort": "Loading failed",
+        "editor.saveFailedShort": "Saving failed",
+        "editor.downloading": "Downloading {percent}%",
+        "editor.decrypting": "Decrypting {percent}%",
+        "editor.encrypting": "Encrypting {percent}%",
+        "editor.uploading": "Uploading {percent}%"
     },
 
     zh: {
@@ -189,9 +198,18 @@ export const messages = {
         "editor.sizeOf": "体积：{size} / 上限 {max}",
         "editor.tooLong": "笔记已达可保存上限（加密后 {max}），超出的内容还没保存；删掉一些就会继续自动保存。",
         "editor.deleteForever": "永久删除",
-        "editor.saveFailed": "保存时出错了：",
         "editor.confirmDelete": "确定吗？此操作无法撤销",
-        "editor.deleteFailed": "删除失败"
+        "editor.deleteFailed": "删除失败",
+        "editor.loading": "加载中 {percent}%",
+        "editor.loaded": "加载完成",
+        "editor.saving": "保存中 {percent}%",
+        "editor.saved": "保存完成",
+        "editor.loadFailedShort": "加载失败",
+        "editor.saveFailedShort": "保存失败",
+        "editor.downloading": "下载中 {percent}%",
+        "editor.decrypting": "解密中 {percent}%",
+        "editor.encrypting": "加密中 {percent}%",
+        "editor.uploading": "上传中 {percent}%"
     }
 };
 

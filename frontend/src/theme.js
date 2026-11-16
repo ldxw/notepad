@@ -63,13 +63,17 @@ export const skins = [
             bg: "#f8fafb", surface: "#ffffff", surface2: "#f1f5f9", text: "#123b38",
             muted: "#5b7080", border: "#dbe6e8", accent: "#0d9488", link: "#0d9488",
             code: "#f1f5f9", header: "#ffffff",
-            btnBg: "#ea580c", btnText: "#000000", ring: "#0d9488"
+            btnBg: "#ea580c", btnText: "#000000", ring: "#0d9488",
+            // 失败红只在 classic 定义：paletteFor 以 classic 兜底，其余皮肤自动继承。
+            // 走 ...extra 透传，所以键要写成带 -- 的自定义属性名。
+            "--danger": "#dc2626"
         }),
         dark: palette({
             bg: "#0b1416", surface: "#101b1e", surface2: "#16262a", text: "#e6f2f1",
             muted: "#8fa8ae", border: "#1e3135", accent: "#2dd4bf", link: "#2dd4bf",
             code: "#16262a", header: "#0e191c",
-            btnBg: "#f97316", btnText: "#0b1416", ring: "#2dd4bf"
+            btnBg: "#f97316", btnText: "#0b1416", ring: "#2dd4bf",
+            "--danger": "#f87171"
         })
     },
 

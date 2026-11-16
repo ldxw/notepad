@@ -98,6 +98,9 @@
           </div>
       </div>
 
+      <!-- 读取 / 保存进度：绝对定位贴在页头下沿，不占位；只在一段操作真的超过 120ms 时才出现 -->
+      <NoteProgress />
+
   </div>
 
     <Backups v-if="isBackups"></Backups>
@@ -115,6 +118,7 @@
 import Editor from "./Editor.vue";
 import Home from "./Home.vue";
 import Backups from "./Backups.vue";
+import NoteProgress from "./NoteProgress.vue";
 
 import store from "../store";
 import {t, locale, setLocale, availableLocales, siteNameFor} from "../i18n";
@@ -135,7 +139,8 @@ export default {
   components: {
     Home,
     Editor,
-    Backups
+    Backups,
+    NoteProgress
   },
   data() {
 

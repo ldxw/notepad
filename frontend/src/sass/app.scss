@@ -27,6 +27,7 @@
   --btn-bg: #ea580c;
   --btn-text: #000000;
   --ring: #0d9488;
+  --danger: #dc2626;
   --radius: 10px;
 
   --shadow-card: 0 1px 2px rgba(18, 59, 56, .04), 0 8px 24px -14px rgba(18, 59, 56, .18);
@@ -48,6 +49,7 @@
   --btn-bg: #f97316;
   --btn-text: #0b1416;
   --ring: #2dd4bf;
+  --danger: #f87171;
 
   --shadow-card: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -14px rgba(0, 0, 0, .5);
   --shadow-pop: 0 4px 12px -2px rgba(0, 0, 0, .35), 0 16px 40px -12px rgba(0, 0, 0, .55);
@@ -158,16 +160,31 @@ p {
     gap: 0.4rem;
     /* 标题与控件同一中心线：行高收到和控件一致，不靠 margin 撑 */
     line-height: 1.2;
+    /* 窄屏下让标题成为可收缩的弹性项，而不是把页头撑宽 */
+    min-width: 0;
+    overflow: hidden;
   }
 
   > h1 > a {
     color: var(--text);
     text-decoration: none;
     border-radius: 6px;
+    /* 站名是唯一可以牺牲的部分：先截断它，保证控件不被顶出屏幕 */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
 
     &:hover {
       color: var(--accent);
     }
+  }
+
+  /* 分隔符与文档号是固定宽度的短标签，不参与收缩 */
+  > h1 > span {
+    flex-shrink: 0;
+    white-space: nowrap;
   }
 
   .brand-icon {
@@ -209,6 +226,80 @@ p {
   border-radius: var(--radius, 10px);
   color: var(--accent);
   font-size: 0.9rem;
+}
+
+/* 读取 / 保存进度：页头下沿一条细线 + 居中百分比。绝对定位挂在 .header 底部，
+   不参与布局；只有操作真的持续超过 120ms 时由 classes/Progress.js 显示。 */
+.note-progress {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  pointer-events: none;
+  z-index: 45;
+}
+
+.note-progress-track {
+  width: 100%;
+  height: 100%;
+  background-color: color-mix(in srgb, var(--border) 70%, transparent);
+}
+
+.note-progress-fill {
+  height: 100%;
+  width: 0;
+  background-color: var(--accent);
+  transition: width .12s linear;
+}
+
+/* 百分比落在细条下方正中；高度控制在一行内，正好塞进编辑器上方的空白，
+   不压住工具栏文字 */
+.note-progress-label {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background-color: var(--header-bg);
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* 出场的淡入淡出：条子本身只有 3px 高，硬切会像页头闪了一下 */
+.note-progress-enter-active,
+.note-progress-leave-active {
+  transition: opacity .16s ease;
+}
+
+.note-progress-enter-from,
+.note-progress-leave-to {
+  opacity: 0;
+}
+
+/* 失败态：条子与文字一起转成警示色，读屏器读到的是 role=status 的短句 */
+.note-progress.is-failed .note-progress-fill {
+  background-color: var(--danger);
+}
+
+.note-progress.is-failed .note-progress-label {
+  color: var(--danger);
+}
+
+/* 尊重系统的「减少动态效果」：条子直接出现/消失，宽度也不做动画 */
+@media (prefers-reduced-motion: reduce) {
+  .note-progress-enter-active,
+  .note-progress-leave-active {
+    transition: none;
+  }
+
+  .note-progress-fill {
+    transition: none;
+  }
 }
 
 a, a:visited, a:active {
