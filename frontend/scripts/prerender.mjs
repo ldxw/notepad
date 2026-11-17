@@ -67,7 +67,12 @@ const cleanStderr = (raw) => (raw || "").split("\n")
 // --no-zygote / --single-process：多架构构建里 arm64 那条腿是 QEMU 模拟执行，
 // Chrome 的多进程架构（zygote / GPU 子进程）在模拟环境下起不来，会报
 // "Did not receive ping from zygote child" / "GPU process launch failed"，然后渲染失败。
-// 单进程模式可以绕开这个问题，对一次性的 --dump-dom 渲染没有副作用。
+// chrome-headless-shell 本身就是单进程形态，这两个参数对它没影响；
+// 完整 Chromium 则不然：2026 年起 --headless 旧开关被移除，不带 --headless=new
+// 会尝试起 X 会话挂死，且新无头模式下 --single-process 直接 SIGTRAP 崩溃。
+// 所以完整 Chromium 走 --headless=new 并剥离 --single-process（保留 --no-zygote 无害）。
+const isFullChromium = !/chrome-headless-shell/.test(chrome);
+
 const BASE_ARGS = [
     "--no-sandbox",
     "--no-zygote",
@@ -79,6 +84,23 @@ const BASE_ARGS = [
     "--virtual-time-budget=10000",
     "--dump-dom"
 ];
+
+const chromeArgs = () => {
+    if (!isFullChromium) {
+        return BASE_ARGS;
+    }
+    return ["--headless=new",
+        ...BASE_ARGS.filter((arg) => arg !== "--single-process")];
+};
+
+// file:// 加载时绝对路径资源（src="/bundle.js"）指向文件系统根，解析不到，
+// 页面 JS 不执行、渲染出来仍是空壳。渲染前把绝对路径临时改写成相对路径
+//（文件与 dist 同目录），渲染完的产物再换回绝对路径 —— 线上仍是 / 绝对引用。
+const relativize = (html) => html
+    .replace(/(src|href)="\/([^\/"])/g, '$1="./$2');
+
+const absolutize = (html) => html
+    .replace(/(src|href)="\.\//g, '$1="/');
 
 const fail = (label, stderr) => {
     console.error(`[prerender] ${label}渲染失败，保留未预渲染的 index.html 供排查`);
@@ -95,12 +117,12 @@ function renderLang(html, lang) {
 
     const tag = `<meta name="default-locale" content="${lang}"${MARKER}>`;
 
-    writeFileSync(tmp, /<head[^>]*>/i.test(html)
+    writeFileSync(tmp, relativize(/<head[^>]*>/i.test(html)
         ? html.replace(/(<head[^>]*>)/i, (match) => match + "\n    " + tag)
-        : html);
+        : html));
 
     const out = spawnSync(chrome, [
-        ...BASE_ARGS.slice(0, -1),
+        ...chromeArgs().slice(0, -1),
         `--lang=${lang === "zh" ? "zh-CN" : "en-US"}`,
         "--dump-dom",
         `file://${tmp}`
@@ -116,27 +138,38 @@ function renderLang(html, lang) {
         return {ok: false, stderr: cleanStderr(out.stderr)};
     }
 
-    // 去掉只给预渲染用的那条 meta
+    // 去掉只给预渲染用的那条 meta，资源引用换回线上的绝对路径
     return {
         ok: true,
-        html: out.stdout.replace(new RegExp('\\s*<meta name="default-locale" content="[^"]*"' + MARKER + '>'), "")
+        html: absolutize(out.stdout.replace(new RegExp('\\s*<meta name="default-locale" content="[^"]*"' + MARKER + '>'), ""))
     };
 }
 
 console.log(`[prerender] 使用 ${chrome}`);
 
-// 没指定语言：按老办法渲染一份，语言交给无头浏览器默认值
+// 没指定语言：按老办法渲染一份，语言交给无头浏览器默认值。
+// 同样走临时副本（relativize 后 file:// 才能加载到 bundle.js）
 if (!PRERENDER_LANGS.length) {
 
-    const out = spawnSync(chrome, [...BASE_ARGS, `file://${INDEX}`], {encoding: "utf8", maxBuffer: 64 * 1024 * 1024});
+    const tmpNoLang = path.resolve("dist", ".index.prerender.html");
+    writeFileSync(tmpNoLang, relativize(readFileSync(INDEX, "utf8")));
 
-    if (out.status !== 0 || !out.stdout || out.stdout.length < 200) {
-        fail("", cleanStderr(out.stderr));
+    const rendered = spawnSync(chrome, [...chromeArgs(), `file://${tmpNoLang}`], {encoding: "utf8", maxBuffer: 64 * 1024 * 1024});
+
+    try {
+        unlinkSync(tmpNoLang);
+    } catch {
+        // 清理失败不影响结果
     }
 
-    writeFileSync(INDEX, out.stdout);
+    if (rendered.status !== 0 || !rendered.stdout || rendered.stdout.length < 200) {
+        fail("", cleanStderr(rendered.stderr));
+    }
 
-    console.log(`[prerender] 完成：dist/index.html ${before} → ${out.stdout.length} 字节`);
+    const html = absolutize(rendered.stdout);
+    writeFileSync(INDEX, html);
+
+    console.log(`[prerender] 完成：dist/index.html ${before} → ${html.length} 字节`);
     process.exit(0);
 }
 
