@@ -242,6 +242,27 @@ p {
   font-weight: 700;
 }
 
+/* 容量条：加密后体积相对上限的比例，贴在状态栏上方一条 4px 细线。
+   平时低调（淡底、正文字色），超限转红——与状态栏的 size-bar-full
+   和 limit-warning 同一套语义。 */
+.capacity-bar {
+  height: 4px;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, var(--border) 70%, transparent);
+  overflow: hidden;
+}
+
+.capacity-bar-fill {
+  height: 100%;
+  width: 0;
+  background-color: var(--text);
+  transition: width .2s ease;
+}
+
+.capacity-bar-fill.is-full {
+  background-color: var(--danger);
+}
+
 /* 超限说明：只在真的存不下时出现，占一整行，不挤状态栏 */
 .limit-warning {
   margin: -0.5rem 0 1rem;

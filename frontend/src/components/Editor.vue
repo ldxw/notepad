@@ -11,6 +11,15 @@
                 :placeholder="t('editor.placeholder')" style="resize: none"
                 class="flex-grow"></textarea>
 
+      <!-- 容量条：加密后请求体占上限的比例，贴着状态栏细线展示 -->
+      <div class="capacity-bar" role="progressbar"
+           :aria-valuenow="Math.round(Math.min(payloadSize / maxPayload * 100, 100))"
+           aria-valuemin="0" aria-valuemax="100"
+           :aria-label="t('editor.sizeOf', {size: payloadSizeText, max: maxPayloadText})">
+        <div class="capacity-bar-fill" :class="{'is-full': isTooLong}"
+             :style="{width: Math.min(payloadSize / maxPayload * 100, 100) + '%'}"></div>
+      </div>
+
       <div class="flex justify-between mt-2 mb-5">
 
         <div class="status-bar">
