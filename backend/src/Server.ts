@@ -194,14 +194,7 @@ export class Server {
                     return res.status(404).end();
                 }
 
-                const accelPrefix = Server.backupsAccelPrefix();
-
-                if (accelPrefix) {
-                    res.setHeader("X-Accel-Redirect", accelPrefix.replace(/\/+$/, "") + "/" + name);
-                    return res.end();
-                }
-
-                return res.sendFile(name, {root: Server.backupsDir(parentPublic)}, (err) => {
+                return res.sendFile(name, {root: path.join(parentPublic, "backups")}, (err) => {
                     if (err && !res.headersSent) {
                         res.status(404).end();
                     }
@@ -231,30 +224,6 @@ export class Server {
         }
 
         return !["off", "false", "0", "no", "disable", "disabled"].includes(raw);
-    }
-
-    /**
-     * 归档目录（运行时变量 BACKUPS_DIR）：
-     *   不设（默认）→ <public>/backups，和上游一致，归档落在文档根内；
-     *   设了        → 用这个绝对路径，归档落在文档根外，express.static 够不着。
-     *
-     * 归档脚本（backend/bin/archive.sh）读同一个变量，两边要一起改。
-     */
-    protected static backupsDir(publicDir: string): string {
-        const raw = String(process.env.BACKUPS_DIR === undefined ? "" : process.env.BACKUPS_DIR).trim();
-        if (!raw) {
-            return path.join(publicDir, "backups");
-        }
-        return path.resolve(raw);
-    }
-
-    /**
-     * X-Accel-Redirect 前缀（运行时变量 BACKUPS_ACCEL_PREFIX）：
-     *   设了 → 下载请求不自己 sendFile，改为让前置 nginx 从 internal location 发；
-     *   不设 → 直接 res.sendFile（单机 / 无反代场景）。
-     */
-    protected static backupsAccelPrefix(): string {
-        return String(process.env.BACKUPS_ACCEL_PREFIX === undefined ? "" : process.env.BACKUPS_ACCEL_PREFIX).trim();
     }
 
     /** Accept-Language 里是否要中文文案 */
@@ -959,15 +928,15 @@ ${body}
      *   /backups、/backups/ 列表页的 SPA 壳子（实际由前端渲染）。
      *
      * 真正发文件的路径不在这里，在 enableStatic() 的包装层：下载必须过 isArchiveName
-     * 白名单，BACKUPS_DOWNLOAD=off 时一律 403。归档目录由运行时变量 BACKUPS_DIR 决定
-     * （不设 = <public>/backups；设了 = 文档根之外的绝对路径）。
+     * 白名单，BACKUPS_DOWNLOAD=off 时一律 403。归档固定在 <public>/backups，
+     * 和上游一致，不再提供目录配置。
      *
      * 服务端渲染的纯 HTML + 内联 CSS（零依赖），样式与首页一致，
      * 文案按 Accept-Language 在中/英之间切换。
      */
     protected enableBackupsIndex(publicDir: string) {
 
-        const backupsDir = Server.backupsDir(publicDir);
+        const backupsDir = path.join(publicDir, "backups");
 
         // 归档统计接口：只回聚合数字（数量 / 最新归档时间 / 保留策略）。
         // 文件名和时间戳属于归档本身的元数据，匿名接口不暴露 —— 页面也不再列清单，

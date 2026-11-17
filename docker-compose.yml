@@ -46,13 +46,6 @@ services:
       # 回滚 = 置 0 或删掉，改完重启容器生效。
       ENVELOPE_ENFORCE: "${ENVELOPE_ENFORCE:-0}"
 
-      # 归档目录：不设 = <public>/backups（文档根内，和上游一致）；
-      # 设成绝对路径 = 归档落在文档根外，express.static 够不着，只能走白名单下载。
-      # 容器内路径必须与下面 volumes 里的挂载一致。
-      BACKUPS_DIR: "${BACKUPS_DIR}"
-      # 前置 nginx 的 internal location 前缀；设了就走 X-Accel-Redirect，不设就直接发文件
-      BACKUPS_ACCEL_PREFIX: "${BACKUPS_ACCEL_PREFIX}"
-
       # ── 容器内定时归档（backend/bin/archive.sh）────────────────────────────
       # 容器时区：cron 的小时数按这个时区计算（默认 UTC 会导致时间不对）
       TZ: ${TZ:-Asia/Shanghai}
@@ -69,8 +62,5 @@ services:
     volumes:
       - ./backend/storage:/app/backend/storage
       - ./backend/public:/app/backend/public
-      # 归档目录（BACKUPS_DIR）：放在文档根外，express.static 够不着；
-      # 容器内路径与 environment 里的 BACKUPS_DIR 必须一致
-      - ./backend/backups:/app/backend/backups
     ports:
       - "3000:3000"
