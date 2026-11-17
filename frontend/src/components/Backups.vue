@@ -28,10 +28,10 @@
                 <span class="backup-meta">
                     <span class="backup-name">{{ file.name }}<span class="backup-badge" v-if="file.latest">{{ t("backups.latest") }}</span></span>
                     <span class="backup-sub">{{ sizeLabel(file.size) }} · {{ timeLabel(file.time) }}</span>
-                </span>
-                <span class="backup-dl" :class="{off: !data.downloadable}">
-                    {{ data.downloadable ? t("backups.download") : t("backups.off") }}
-                    <template v-if="data.downloadable"> ↓</template>
+                    <span class="backup-dl" :class="{off: !data.downloadable}">
+                        {{ data.downloadable ? t("backups.download") : t("backups.off") }}
+                        <template v-if="data.downloadable"> ↓</template>
+                    </span>
                 </span>
             </a>
         </div>
