@@ -14,9 +14,9 @@
       <div class="flex justify-between mt-2 mb-5">
 
         <div class="status-bar">
-          {{ t('editor.words') }}: {{ wordCount }},
-          {{ t('editor.characters') }}: <span v-if="selectedCharCount">{{ selectedCharCount }}/</span>{{ charCount }},
-          {{ t('editor.lines') }}: {{ lineCount }}
+          {{ t('editor.words') }}: <span class="stat-num">{{ wordCount }}</span>
+          · {{ t('editor.characters') }}: <span class="stat-num"><span v-if="selectedCharCount">{{ selectedCharCount }}/</span>{{ charCount }}</span>
+          · {{ t('editor.lines') }}: <span class="stat-num">{{ lineCount }}</span>
           <span class="size-bar" :class="{'size-bar-full': isTooLong}">
             · {{ t('editor.sizeOf', {size: payloadSizeText, max: maxPayloadText}) }}
           </span>

@@ -208,7 +208,31 @@ p {
   color: var(--muted);
 }
 
-/* 编辑器状态栏里的体积读数：接近上限时转成警示色 */
+/* 编辑器顶部的提示文字：页头下沿还常驻着保存完成的胶囊（进度条完成态），
+   文字要往下让开一点并居中，不再顶着胶囊。上留白与文字到输入框的下留白
+   取同一档（约 12px），整组「胶囊 → 文字 → 输入框」的间距读起来均匀。 */
+.toolbar {
+  padding-top: 1.75rem;
+  text-align: center;
+}
+
+.toolbar p {
+  margin-bottom: 0.75rem;
+}
+
+/* 编辑器状态栏：整行收小一号并弱化成辅助信息，数字用正文字色稍加重，
+   读数从一排同权重的深色文字变成「标签淡、数字重」的两层 */
+.status-bar {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.stat-num {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* 编辑器状态栏里的体积读数：默认跟随状态栏的弱化色，接近上限时转成警示色 */
 .size-bar {
   color: var(--muted);
 }
@@ -298,8 +322,8 @@ p {
 }
 
 .note-progress.is-done .note-progress-label {
-  top: 5px;
-  padding: 0.1rem 0.55rem;
+  top: 12px;
+  padding: 0.15rem 0.55rem;
   color: var(--accent);
   background-color: color-mix(in srgb, var(--accent) 10%, var(--header-bg));
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
