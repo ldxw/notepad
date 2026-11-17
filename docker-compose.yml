@@ -35,18 +35,31 @@ services:
       SITE_SKIN: ${SITE_SKIN}
 
       # 单篇笔记的体积上限（加密后的字节数），认 480kb / 2m / 1048576 这些写法。
-      # 不设 = 32m（硬上限，约 530 万汉字 / 1600 万英文字符）；写再多也按 32m 处理。
-      # 想收紧时配一个小值，例如 480kb（约 24 万汉字）。前端读同一个值在输入时拦截，
-      # 改完重启容器即生效。前面若有 nginx，client_max_body_size（默认 1m）
-      # 要不小于这里设的值。
+      # 不设 = 32m（默认，约 530 万汉字 / 1600 万英文字符）；写再多也按 32m 处理。
+      # 想收紧时配一个更小的值，例如 4m（约 65 万汉字）。前端读同一个值在输入时拦截，
+      # 改完重启容器即生效。前面若有 nginx，client_max_body_size 默认 1m 会先拦掉，
+      # 要按 1024 进制换算成裸字节（32m = 33554432），否则大笔记会先被它判 413。
       NOTE_MAX_BYTES: "${NOTE_MAX_BYTES}"
+
+      # 笔记信封结构校验灰度开关（服务端只查加密外壳形状，不解密，仍然零知识）。
+      # 不设 = 影子模式：非法请求体只告警、照常保存；设 1 后非法信封直接 400。
+      # 回滚 = 置 0 或删掉，改完重启容器生效。
+      ENVELOPE_ENFORCE: "${ENVELOPE_ENFORCE:-0}"
+
+      # 归档目录：不设 = <public>/backups（文档根内，和上游一致）；
+      # 设成绝对路径 = 归档落在文档根外，express.static 够不着，只能走白名单下载。
+      # 容器内路径必须与下面 volumes 里的挂载一致。
+      BACKUPS_DIR: "${BACKUPS_DIR}"
+      # 前置 nginx 的 internal location 前缀；设了就走 X-Accel-Redirect，不设就直接发文件
+      BACKUPS_ACCEL_PREFIX: "${BACKUPS_ACCEL_PREFIX}"
 
       # ── 容器内定时归档（backend/bin/archive.sh）────────────────────────────
       # 容器时区：cron 的小时数按这个时区计算（默认 UTC 会导致时间不对）
       TZ: ${TZ:-Asia/Shanghai}
       # 归档时间：标准 5 段 cron 表达式；"off" 可关闭。默认每天 03:30
       ARCHIVE_CRON: "${ARCHIVE_CRON:-30 3 * * *}"
-      # 归档下载开关：on（默认）→ /backups/ 公开可下载；off → 只列清单，下载入口与直链都拦掉
+      # 归档下载开关：on（默认）→ /backups/ 下符合归档命名的文件可下载；
+      # off → 只列清单，下载入口与直链都 403
       BACKUPS_DOWNLOAD: "${BACKUPS_DOWNLOAD:-on}"
       # 归档保留天数：不设 = 保留全部；填正整数 N = 只保留最近 N 天（归档任务自动删除更早的）
       ARCHIVE_KEEP_DAYS: "${ARCHIVE_KEEP_DAYS}"
@@ -56,5 +69,8 @@ services:
     volumes:
       - ./backend/storage:/app/backend/storage
       - ./backend/public:/app/backend/public
+      # 归档目录（BACKUPS_DIR）：放在文档根外，express.static 够不着；
+      # 容器内路径与 environment 里的 BACKUPS_DIR 必须一致
+      - ./backend/backups:/app/backend/backups
     ports:
       - "3000:3000"

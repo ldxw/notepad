@@ -122,13 +122,18 @@ export default {
 
                 console.time('scrypt');
 
-                const hash = await Security.slowHash(val, APP_KEY);
+                // 双派生：v2 用 UTF-8 字节修复非 ASCII 口令的熵塌陷；
+                // v1 逐字复刻旧参数，用于打开存放在旧派生地址上的存量笔记
+                const [hashV2, hashV1] = await Promise.all([
+                    Security.slowHash(val, APP_KEY, 'v2'),
+                    Security.slowHash(val, APP_KEY, 'v1')
+                ]);
 
                 console.timeEnd('scrypt');
 
                 this.isBusy = false;
 
-                store.mutations.login(hash);
+                store.mutations.login(hashV2, hashV1);
             }
         }
     },

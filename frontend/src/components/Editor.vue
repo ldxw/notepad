@@ -90,13 +90,14 @@ export default {
       try {
 
         const text = this.text;
-        const authKey = store.state.authKey;
-        const password = store.state.encryptionKey;
+        // activeKdf 命中 v1 兜底后，读写都粘在 v1 地址上
+        const authKey = store.state.activeAuthKey;
+        const password = store.state.activeEncryptionKey;
 
         const task = begin('save');
 
         try {
-          await SecureStorage.write(authKey, text, password, (f, stage) => update(task, f, stage));
+          await SecureStorage.write(authKey, text, password, (f, stage) => update(task, f, stage), store.state.activeKdf);
           finish(task);
         } catch (ex) {
           fail(task);
@@ -147,7 +148,7 @@ export default {
 
       if (confirm(t('editor.confirmDelete'))) {
 
-            const key = store.state.authKey;
+            const key = store.state.activeAuthKey;
 
             SecureStorage.remove(key).then(() => {
                 store.actions.reset();
@@ -171,7 +172,18 @@ export default {
 
         if (newValue) {
             const password = store.state.encryptionKey;
-            const text = await SecureStorage.read(newValue, password, (f, stage) => update(task, f, stage));
+            let text = await SecureStorage.read(newValue, password, (f, stage) => update(task, f, stage));
+
+            // v2 地址为空 → 换 v1 兜底键再查一次。存量笔记（尤其非 ASCII 口令的）
+            // 都存放在旧派生参数的 v1 地址上；命中后粘住 v1，写入也走 v1 地址，
+            // 避免同一篇笔记在两个派生地址之间分叉。兜底命中会重放一遍进度。
+            if (!text && store.state.authKeyV1) {
+                text = await SecureStorage.read(store.state.authKeyV1, store.state.encryptionKeyV1, (f, stage) => update(task, f, stage));
+
+                if (text) {
+                    store.mutations.setActiveKdf('v1');
+                }
+            }
 
             this.text = text;
 

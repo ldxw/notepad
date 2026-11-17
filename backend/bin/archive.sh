@@ -6,7 +6,10 @@ set -eu
 BIN_DIR="$(dirname "$(readlink -f "$0")")"
 BACKEND_DIR="$(dirname "$BIN_DIR")"
 STORAGE_DIR="$BACKEND_DIR/storage"
-BACKUPS_DIR="$BACKEND_DIR/public/backups"
+# 归档目录跟随运行时变量 BACKUPS_DIR（和后端 Server.backupsDir 读同一个值）：
+#   不设 → <public>/backups（文档根内，和上游一致）
+#   设了 → 用这个绝对路径（推荐放文档根外，express.static 够不着）
+BACKUPS_DIR="${BACKUPS_DIR:-$BACKEND_DIR/public/backups}"
 
 # 备份目录可能还不存在（新部署，或者 public/ 是挂载进来的空目录）——
 # 建出来就行，不要像原来那样直接报 "not found" 退出，否则容器内的每日归档永远跑不成。

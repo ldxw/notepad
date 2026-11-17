@@ -2,7 +2,7 @@ import {NextFunction, Request, RequestHandler, Response, Router} from "express";
 import {Database} from "./Database";
 import {Server} from "./Server";
 import {Config} from "./config";
-import {urlKeyFromAuthKey} from "./Util";
+import {urlKeyFromAuthKey, NO_STORE} from "./Util";
 import {NotesController} from "./NotesController";
 
 const server = new Server();
@@ -41,12 +41,17 @@ server.app.get('/notes/:id', function (req: Request, res: Response) {
 
     const contents = Database.get(authKey);
 
-    if (contents) {
-        res.setHeader('content-type', 'text/plain');
-        res.send(contents);
-    } else {
-        res.status(404).json({error: "Note not found"});
+    // P1-3：与 /api/notes/:id 同样的处理 —— 不存在一律 404 空体 + no-store，
+    // 不再用 JSON 错误体区分「不存在」与「存在但内容为空」。
+    res.setHeader('Cache-Control', NO_STORE);
+
+    if (contents === null) {
+        res.status(404).setHeader('content-type', 'text/plain').send("");
+        return;
     }
+
+    res.setHeader('content-type', 'text/plain');
+    res.send(contents);
 
 })
 

@@ -66,3 +66,10 @@ export const randomInteger = (min?: number, max?: number): number => {
 export const isHexString = (str: string): boolean => {
     return str.replace(/[a-f0-9]/ig, '').length === 0;
 }
+
+/**
+ * P2-3：/api 与 /notes/:id 下所有响应的缓存策略。
+ * 笔记按 key 寻址，响应一旦被 CDN / 共享代理缓存，第三方就可能读到别人的内容；
+ * no-store 压住持久缓存，no-cache + must-revalidate 压住复用，private 排除共享缓存。
+ */
+export const NO_STORE = 'no-store, no-cache, must-revalidate, private';

@@ -4,6 +4,7 @@ import path from "path";
 
 import {SiteMeta} from "./SiteMeta";
 import {Config} from "./config";
+import {NO_STORE} from "./Util";
 
 const express = require('express');
 
@@ -22,6 +23,13 @@ export class Server {
         app.set('etag', false);
         app.disable('x-powered-by');
 
+        // P2-3：/api/* 一律不许被缓存。笔记按 key 寻址，缓存一份就等于把内容交给
+        // CDN 或共享代理；这条中间件先于路由注册，路由里再设头也只是覆盖成同样的值。
+        app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+            res.setHeader('Cache-Control', NO_STORE);
+            next();
+        });
+
         this.router = Router();
         this.app = app;
 
@@ -35,14 +43,23 @@ export class Server {
 
     protected enablePost() {
 
-        // 上游原本限 10kb。但一篇笔记发过来的是 AES-256-CBC 密文的 hex 加一个小 JSON 外壳，
+        // 上游原本限 10kb。但一篇笔记发过来的是 AES-128 密文的 hex 加一个小 JSON 外壳，
         // 明文的每个字节会变成 2 个 hex 字符 —— 10kb 实际上只够存约 5KB 文字（中文约 1700 字）。
-        // 现在的上限来自 NOTE_MAX_BYTES（见 config.ts，不配就是 32MB 硬上限），前端通过
+        // 现在的上限来自 NOTE_MAX_BYTES（见 config.ts，不配就是 32MiB），前端通过
         // <meta name="note-max-bytes"> 读到同一个值，在输入时就拦住超限内容。
         const limit = Config.noteMaxBytes;
 
         this.app.use(express.urlencoded({
             extended: true,
+            limit
+        }));
+
+        // P1-2：POST /api/notes/:id 的请求体是一个加密信封 JSON（算法标签 + hex 的
+        // iv 与密文），结构校验在 NotesController.write 里做；这里先按 Buffer 原样
+        // 接住，避免被下面的 express.text 当成普通文本处理。放在 urlencoded 之后，
+        // 表单请求仍由上面解析、维持原有 400 行为。
+        this.app.use('/api/notes', express.raw({
+            type: '*/*',
             limit
         }));
 
@@ -103,37 +120,53 @@ export class Server {
             etag: true
         });
 
-        // BACKUPS_DOWNLOAD=off 时，/backups/ 下的文件一律不发（列表页本身除外）。
-        // 这里在静态中间件外面包一层，而不是只拦 /backups/:file —— 多写斜杠 //、
-        // URL 编码（%2F、%2e）、子目录、大写 /BACKUPS 这些写法也一并挡住，
-        // 也就是「复制文件名拼地址直接下」这条路走不通。
+        // 归档只从白名单路径发出（列表页本身除外）。包在静态中间件外面，而不是只拦
+        // /backups/:file —— 多写斜杠 //、URL 编码（%2F、%2e）、子目录、大写 /BACKUPS
+        // 这些写法也一并挡住，也就是「复制文件名拼地址直接下」这条路走不通。
         this.app.use((req: Request, res: Response, next: NextFunction) => {
 
-            if (Server.backupsDownloadEnabled()) {
-                return staticMiddleware(req, res, next);
+            // ① 原始 URI 硬拦：必须用 originalUrl（未解码）；req.path / req.url 已被
+            //    规范化，正是前置 CDN 与 nginx 语义差所利用的那一步
+            const rawPath = String(req.originalUrl || "").split("?")[0];
+
+            if (/%2e|%2f|%5c/i.test(rawPath) || /(^|\/)\.\.(\/|$)/.test(rawPath)) {
+                return res.status(400).end();
             }
 
-            let path = String(req.originalUrl || "").split("?")[0];
+            // ② 解码但保留原始大小写：文件名要用它取（Linux 上大小写敏感）
+            let reqPath = rawPath;
 
             try {
-                path = decodeURIComponent(path);
+                reqPath = decodeURIComponent(reqPath);
             } catch (ex) {
-                // 非法百分号编码：保持原样判断，同样会被当成不允许的路径
+                // 非法百分号编码：保持原样判断，后面按非白名单处理
             }
 
-            // 压掉重复斜杠、"/./"，并统一小写（Windows 风格的大小写绕过也算）
-            path = path.replace(/\/{2,}/g, "/").replace(/\/\.\//g, "/").toLowerCase();
+            // ②′ 解码后再查一遍编码点：挡住双重编码（%252e 等）绕过第一道守卫
+            if (/%2e|%2f|%5c/i.test(reqPath) || /(^|\/)\.\.(\/|$)/.test(reqPath)) {
+                return res.status(400).end();
+            }
 
-            // 只有列表页本身放行（它已由上面的路由渲染成清单）
-            if (path === "/backups" || path === "/backups/") {
+            // ③ 小写归一化版：只用于「是不是 /backups 路径」的判定，不能用来取文件名
+            const norm = reqPath.replace(/\/{2,}/g, "/").replace(/\/\.\//g, "/").toLowerCase();
+
+            // 列表页本身放行（实际由 enableBackupsIndex 注册的 SPA 路由处理，这里只作兜底）
+            if (norm === "/backups" || norm === "/backups/") {
                 return next();
             }
 
-            if (path.indexOf("/backups") === 0) {
+            if (norm.indexOf("/backups") === 0) {
 
-                const zh = Server.resolveLangZh(req, res);
+                // 前缀相同但不是目录（如 /backupsXxx）→ 404
+                if (norm.indexOf("/backups/") !== 0) {
+                    return res.status(404).end();
+                }
 
-                const body = `
+                if (!Server.backupsDownloadEnabled()) {
+
+                    const zh = Server.resolveLangZh(req, res);
+
+                    const body = `
   <h1>403</h1>
   <p>${zh
       ? "本实例已关闭归档下载。"
@@ -143,10 +176,36 @@ export class Server {
       : `The listing is still available at <a href="/backups/">/backups/</a>.`}</p>
 `;
 
-                return res.status(403)
-                    .set('Content-Type', 'text/html; charset=utf-8')
-                    .send(Server.pageShell(zh, zh ? "已关闭下载" : "Downloads disabled", body,
-                        String(req.originalUrl || "/").split("?")[0]));
+                    return res.status(403)
+                        .set('Content-Type', 'text/html; charset=utf-8')
+                        .send(Server.pageShell(zh, zh ? "已关闭下载" : "Downloads disabled", body,
+                            rawPath));
+                }
+
+                // 从「原始大小写」的路径截取文件名，交给白名单校验
+                const name = reqPath.slice("/backups/".length);
+
+                // 文件名不得含路径分隔符或上跳，白名单之外再加一道结构性拒绝
+                if (name.includes("/") || name.includes("\\") || name.includes("..")) {
+                    return res.status(404).end();
+                }
+
+                if (!Server.isArchiveName(name)) {
+                    return res.status(404).end();
+                }
+
+                const accelPrefix = Server.backupsAccelPrefix();
+
+                if (accelPrefix) {
+                    res.setHeader("X-Accel-Redirect", accelPrefix.replace(/\/+$/, "") + "/" + name);
+                    return res.end();
+                }
+
+                return res.sendFile(name, {root: Server.backupsDir(parentPublic)}, (err) => {
+                    if (err && !res.headersSent) {
+                        res.status(404).end();
+                    }
+                });
             }
 
             return staticMiddleware(req, res, next);
@@ -172,6 +231,30 @@ export class Server {
         }
 
         return !["off", "false", "0", "no", "disable", "disabled"].includes(raw);
+    }
+
+    /**
+     * 归档目录（运行时变量 BACKUPS_DIR）：
+     *   不设（默认）→ <public>/backups，和上游一致，归档落在文档根内；
+     *   设了        → 用这个绝对路径，归档落在文档根外，express.static 够不着。
+     *
+     * 归档脚本（backend/bin/archive.sh）读同一个变量，两边要一起改。
+     */
+    protected static backupsDir(publicDir: string): string {
+        const raw = String(process.env.BACKUPS_DIR === undefined ? "" : process.env.BACKUPS_DIR).trim();
+        if (!raw) {
+            return path.join(publicDir, "backups");
+        }
+        return path.resolve(raw);
+    }
+
+    /**
+     * X-Accel-Redirect 前缀（运行时变量 BACKUPS_ACCEL_PREFIX）：
+     *   设了 → 下载请求不自己 sendFile，改为让前置 nginx 从 internal location 发；
+     *   不设 → 直接 res.sendFile（单机 / 无反代场景）。
+     */
+    protected static backupsAccelPrefix(): string {
+        return String(process.env.BACKUPS_ACCEL_PREFIX === undefined ? "" : process.env.BACKUPS_ACCEL_PREFIX).trim();
     }
 
     /** Accept-Language 里是否要中文文案 */
@@ -871,52 +954,48 @@ ${body}
   }
 
     /**
-     * 列出 public/backups 里的归档文件（就是 archive.sh / 容器内定时任务产出的那些）。
-     * 和上游 notepad.mx/backups/ 一样是公开的 —— 这就是「所有笔记都可导出」的那条路子；
-     * 想关掉下载就把 BACKUPS_DOWNLOAD 设成 off。
+     * 归档相关的两条路由：
+     *   /api/backups        聚合清单（数量 / 最新时间 / 保留天数），不含文件名；
+     *   /backups、/backups/ 列表页的 SPA 壳子（实际由前端渲染）。
+     *
+     * 真正发文件的路径不在这里，在 enableStatic() 的包装层：下载必须过 isArchiveName
+     * 白名单，BACKUPS_DOWNLOAD=off 时一律 403。归档目录由运行时变量 BACKUPS_DIR 决定
+     * （不设 = <public>/backups；设了 = 文档根之外的绝对路径）。
      *
      * 服务端渲染的纯 HTML + 内联 CSS（零依赖），样式与首页一致，
      * 文案按 Accept-Language 在中/英之间切换。
      */
     protected enableBackupsIndex(publicDir: string) {
 
-        const fs = require('fs');
-        const backupsDir = path.join(publicDir, 'backups');
+        const backupsDir = Server.backupsDir(publicDir);
 
-        // 归档清单接口：页面本身交给前端渲染，页头页尾就是首页那一份，不再重复实现一遍
+        // 归档统计接口：只回聚合数字（数量 / 最新归档时间 / 保留策略）。
+        // 文件名和时间戳属于归档本身的元数据，匿名接口不暴露 —— 页面也不再列清单，
+        // 归档的真实路径见 nginx 侧（文档根之外）。
         this.app.get('/api/backups', (req: Request, res: Response) => {
 
-            const canDownload = Server.backupsDownloadEnabled();
             const keepDays = Server.archiveKeepDays();
 
-            let files: {name: string, size: number, mtime: Date}[] = [];
+            let latestAt: string | null = null;
+            let total = 0;
 
             try {
-                files = fs.readdirSync(backupsDir)
-                    .map((name: string) => ({name, full: path.join(backupsDir, name)}))
-                    // 只列归档本身（archive.tar.gz / archive_YYYYMMDD.tar.gz）：目录里还可能有 .gitignore 之类
-                    .filter((f: any) => Server.isArchiveName(f.name))
-                    .filter((f: any) => fs.statSync(f.full).isFile())
-                    .map((f: any) => ({name: f.name, size: fs.statSync(f.full).size, mtime: fs.statSync(f.full).mtime}))
-                    .sort((a: any, b: any) => b.mtime.getTime() - a.mtime.getTime());
+                const names = fs.readdirSync(backupsDir)
+                    // 只数归档本身（archive.tar.gz / archive_YYYYMMDD.tar.gz）：目录里还可能有 .gitignore 之类
+                    .filter((name: string) => Server.isArchiveName(name));
+
+                total = names.length;
+
+                if (total > 0) {
+                    const times = names.map((name: string) => fs.statSync(path.join(backupsDir, name)).mtime.getTime());
+                    latestAt = new Date(Math.max(...times)).toISOString();
+                }
             } catch (ex) {
                 // 还没产生过备份（首次归档之前）—— 当作空目录处理
             }
 
-            res.set('Cache-Control', 'no-store');
-            res.json({
-                downloadable: canDownload,
-                keepDays,
-                total: files.length,
-                totalSize: files.reduce((sum: number, f: any) => sum + f.size, 0),
-                files: files.map((f: any, i: number) => ({
-                    name: f.name,
-                    size: f.size,
-                    time: f.mtime.toISOString(),
-                    latest: i === 0,
-                    url: "/backups/" + encodeURIComponent(f.name)
-                }))
-            });
+            res.set('Cache-Control', NO_STORE);
+            res.json({keepDays, latestAt, total});
         });
 
         // 目录页：和首页同一个 HTML 壳子，前端按路径渲染清单

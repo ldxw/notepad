@@ -34,7 +34,10 @@ export class SecureStorage {
 
             const json = Util.parseJsonQuietly(httpResponse);
 
-            if (json?.alg === 'AES-256-CBC') {
+            // 三种标签都接受：新信封标 AES-128（算法名），过渡期曾标 AES-128-CBC，
+            // 旧信封标 AES-256-CBC（标签与密钥长度不符的历史遗留）。
+            // 解密侧 Security.keyFor 会按标签把密钥截到对应长度。
+            if (json?.alg === 'AES-128' || json?.alg === 'AES-128-CBC' || json?.alg === 'AES-256-CBC') {
                 return await Security.decrypt(json, password, remap(0.5, 1, onProgress, 'decrypt'));
             }
         }
@@ -51,12 +54,13 @@ export class SecureStorage {
      * @param contents
      * @param password
      * @param {function(number, string)} [onProgress] 0..1，带阶段名
+     * @param {'v1'|'v2'} [kdf] 写进信封的派生版本标记
      * @returns {Promise<String>}
      */
-    static async write(authKey, contents, password = '', onProgress) {
+    static async write(authKey, contents, password = '', onProgress, kdf = 'v2') {
 
         // array including alg, iv, cipherText
-        const encrypted = await Security.encrypt(contents, password, remap(0, 0.8, onProgress, 'encrypt'));
+        const encrypted = await Security.encrypt(contents, password, remap(0, 0.8, onProgress, 'encrypt'), kdf);
         const json = JSON.stringify(encrypted);
 
         return api.save(authKey, json, remap(0.8, 1, onProgress, 'upload'));

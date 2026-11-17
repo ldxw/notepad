@@ -155,6 +155,23 @@ const SUBTLE = (typeof crypto !== 'undefined' && crypto.subtle) ? crypto.subtle 
 
 const KEY_CACHE = {hex: null, key: null};
 
+// 信封 alg 标签到密钥 hex 长度的映射。实际加密一直是 AES-128（32 hex = 16 字节），
+// 旧版本却在信封里写 AES-256-CBC —— 标签和密钥长度对不上。读取时按标签截到该长度，
+// 对存量笔记是恒等变换（32 位 hex 截到 32 位不变），对新笔记也是恒等；
+// 真正的修正在写入侧：新信封标 AES-128（算法名，不含模式后缀）。
+const KEY_HEX_LEN = {'AES-128': 32, 'AES-128-CBC': 32, 'AES-256-CBC': 64};
+
+function keyFor(envelope, keyHex) {
+
+    const need = KEY_HEX_LEN[envelope && envelope['alg']];
+
+    if (!need) {
+        return keyHex;
+    }
+
+    return keyHex.length > need ? keyHex.slice(0, need) : keyHex;
+}
+
 async function importAesKey(keyHex) {
 
     if (KEY_CACHE.hex === keyHex) {
@@ -189,6 +206,13 @@ export class Security {
         return bufView;
     }
 
+    // v2 派生用的 UTF-8 编码。上面的 str2ab 是旧实现的逐字 Uint16Array 编码，
+    // scrypt-async 把它当字节数组读，charCode > 255 的字符（中文等）只剩低 8 位，
+    // 口令熵塌陷。存量笔记都按旧行为派生，str2ab 必须原样保留。
+    static str2abV2(str) {
+        return new TextEncoder().encode(str);
+    }
+
     static byteArrayToHexString(uint8Array) {
         return bytesToHex(uint8Array);
     }
@@ -213,23 +237,30 @@ export class Security {
     }
 
     /**
+     * 口令派生。kdf='v1' 逐字复刻旧行为（str2ab 编码 + N=2^14, r=8, p=1），
+     * 只用于打开存量笔记；kdf='v2' 用 UTF-8 字节 + N=2^15, r=8, p=2，
+     * 修复非 ASCII 口令在 v1 里被截断导致的熵塌陷。
      *
      * @param password
      * @param salt
+     * @param {'v1'|'v2'} [kdf]
      * @return {Promise<Uint8Array>}
      */
-    static async slowHash(password, salt) {
+    static async slowHash(password, salt, kdf = 'v1') {
 
         return new Promise(function (resolve, reject) {
 
-            let pb = Security.str2ab(password);
-            let sb = Security.str2ab(salt);
+            const v2 = kdf === 'v2';
+            const encode = v2 ? (s) => new TextEncoder().encode(s) : (s) => Security.str2ab(s);
+
+            let pb = encode(password);
+            let sb = encode(salt);
 
             // 1 byte = 2 hex chars
             scryptAsync(pb, sb, {
-                N: Math.pow(2, 14),
+                N: Math.pow(2, v2 ? 15 : 14),
                 r: 8,
-                p: 1,
+                p: v2 ? 2 : 1,
                 dkLen: 32,
                 encoding: 'binary',
                 interruptStep: 1000
@@ -245,14 +276,16 @@ export class Security {
     }
 
     /**
-     * 加密。密文格式与旧实现完全一致（WebCrypto 的 AES-CBC 与 aes-js 逐字节相同）。
+     * 加密。密文体与旧实现逐字节相同（WebCrypto 的 AES-CBC 与 aes-js 一致），
+     * 信封里多一个 kdf 字段标记派生版本（服务端校验放行 v1/v2）。
      *
      * @param {string} data
      * @param {string} key 32 位 hex
      * @param {function(number)} [onProgress] 0..1
-     * @return {Promise<{alg: string, iv: string, cipherText: string, timestamp: number, meta: object}>}
+     * @param {'v1'|'v2'} [kdf] 写进信封的派生版本标记（服务端只存不解）
+     * @return {Promise<{alg: string, iv: string, cipherText: string, timestamp: number, kdf: string, meta: object}>}
      */
-    static async encrypt(data, key, onProgress) {
+    static async encrypt(data, key, onProgress, kdf = 'v2') {
 
         // key must be 32 chars long AND HEX!!!!
         if (!key || key.length !== 32) {
@@ -292,10 +325,13 @@ export class Security {
         report(1);
 
         return {
-            alg: 'AES-256-CBC',
+            // 实际用的是 16 字节密钥 = AES-128。旧版本这里写 AES-256-CBC 属于标签
+            // 错误（读取路径按标签截 key，两种标签都能正确还原）。
+            alg: 'AES-128',
             iv: bytesToHex(iv),
             cipherText: cipherText,
             timestamp: Date.now(),
+            kdf: kdf,
             meta: {}
         }
     }
@@ -310,6 +346,10 @@ export class Security {
     static async decrypt(data, key, onProgress) {
 
         const report = makeReporter(onProgress);
+
+        // 信封标签与实际密钥长度对齐：旧信封标 AES-256-CBC 但密钥是 32 hex（16 字节），
+        // 按标签截到该长度后再解密。对存量笔记是恒等变换，对 64 hex 的信封才是真截断。
+        key = keyFor(data, key);
 
         const iv = hexToBytes(data['iv']);
         const cipherBytes = hexToBytes(data['cipherText'], function (fraction) {

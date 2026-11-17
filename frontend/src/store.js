@@ -20,6 +20,14 @@ const _state = reactive({
 
     key: sessionStorage.getItem('vue-key'),
 
+    // v1（旧派生参数）兜底键：存量笔记（尤其非 ASCII 口令的）都存放在旧派生地址上，
+    // v2 地址读不到时用它兜底重查
+    keyV1: sessionStorage.getItem('vue-key-v1'),
+
+    // 当前生效的派生版本：默认 v2；v1 兜底命中后粘住 v1，读写都用 v1 地址，
+    // 避免同一篇笔记在两个派生地址之间分叉
+    activeKdf: 'v2',
+
     // first 32 bits we use for authentication
     authKey: computed(() => {
         return _state.key ? (_state.key || []).slice(0, 32) : null;
@@ -31,10 +39,38 @@ const _state = reactive({
     }),
     urlKey: '',
 
+    authKeyV1: computed(() => {
+        return _state.keyV1 ? _state.keyV1.slice(0, 32) : null;
+    }),
+
+    encryptionKeyV1: computed(() => {
+        return _state.keyV1 ? _state.keyV1.slice(32, 64) : null;
+    }),
+
+    // 写入 / 删除用的「生效」键：跟随 activeKdf 切换，不改 _state.key，
+    // Editor 的读取 watch（监听 authKey）不会被重新触发
+    activeAuthKey: computed(() => {
+        if (_state.activeKdf === 'v1') {
+            return _state.keyV1 ? _state.keyV1.slice(0, 32) : null;
+        }
+        return _state.key ? (_state.key || []).slice(0, 32) : null;
+    }),
+
+    activeEncryptionKey: computed(() => {
+        if (_state.activeKdf === 'v1') {
+            return _state.keyV1 ? _state.keyV1.slice(32, 64) : null;
+        }
+        return _state.key ? (_state.key || []).slice(32, 64) : null;
+    }),
+
 });
 
 watch(() => _state.key, (newValue) => {
     sessionStorage.setItem('vue-key', newValue);
+});
+
+watch(() => _state.keyV1, (newValue) => {
+    sessionStorage.setItem('vue-key-v1', newValue || '');
 });
 
 const mutations = {
@@ -52,9 +88,10 @@ const mutations = {
 
     /**
      *
-     * @param {Uint8Array} hash
+     * @param {Uint8Array} hash v2 派生结果（登录后读写的主地址）
+     * @param {Uint8Array} [hashV1] v1 旧参数派生结果（打开存量笔记的兜底地址）
      */
-    login: (hash) => {
+    login: (hash, hashV1) => {
 
         console.log(hash);
 
@@ -62,6 +99,16 @@ const mutations = {
 
         _state.key = hex;
         _state.urlKey = Security.base62(hash.slice(0, 16));
+        _state.keyV1 = hashV1 ? Security.byteArrayToHexString(hashV1) : '';
+        _state.activeKdf = 'v2';
+    },
+
+    /**
+     * v1 兜底命中后粘住 v1：之后读写都用 v1 地址，信封 kdf 也记 v1。
+     * 只改 activeKdf 不动 _state.key，Editor 的读取 watch 不会因此重触发。
+     */
+    setActiveKdf: (kdf) => {
+        _state.activeKdf = kdf === 'v1' ? 'v1' : 'v2';
     }
 }
 
@@ -76,6 +123,8 @@ const actions = {
 
     reset() {
         _state.key = '';
+        _state.keyV1 = '';
+        _state.activeKdf = 'v2';
     }
 }
 

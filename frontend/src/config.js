@@ -27,13 +27,13 @@ export const SITE_NAME = injected("site-name") || "notepad.mx";
 
 // 单篇笔记的上限，单位是「加密后发到服务端的请求体字节数」。
 //
-// 笔记保存时是 AES-256-CBC 密文按 hex 上送的：明文 UTF-8 字节数补齐到 16 的倍数后
+// 笔记保存时是 AES-128 密文按 hex 上送的：明文 UTF-8 字节数补齐到 16 的倍数后
 // 再乘 2，外加一层小 JSON。所以这个值大约是「能存的明文」的两倍。
 //
 // 上限本身由容器环境变量 NOTE_MAX_BYTES 决定（认 480kb / 2m / 1048576 这些写法，
-// 不配就用硬上限 32m），后端在启动时把它注入成 <meta name="note-max-bytes">，这里读的
+// 不配就是默认的 32m），后端在启动时把它注入成 <meta name="note-max-bytes">，这里读的
 // 就是那个值 —— 和 express 解析请求体的上限是同一个数，不会前后端各说一套。
-// 读不到时（预渲染阶段、纯静态打开）退回同一个 32m。
+// 读不到时（预渲染阶段、纯静态打开）退回同一个 32MiB。
 const DEFAULT_NOTE_MAX_BYTES = 32 * 1024 * 1024;
 
 function noteMaxBytesFromMeta() {
