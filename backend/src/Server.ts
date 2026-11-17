@@ -924,7 +924,7 @@ ${body}
 
     /**
      * 归档相关的两条路由：
-     *   /api/backups        聚合清单（数量 / 最新时间 / 保留天数），不含文件名；
+     *   /api/backups        归档清单（文件名 / 大小 / 时间 / 下载地址），页面由前端渲染；
      *   /backups、/backups/ 列表页的 SPA 壳子（实际由前端渲染）。
      *
      * 真正发文件的路径不在这里，在 enableStatic() 的包装层：下载必须过 isArchiveName
@@ -938,33 +938,43 @@ ${body}
 
         const backupsDir = path.join(publicDir, "backups");
 
-        // 归档统计接口：只回聚合数字（数量 / 最新归档时间 / 保留策略）。
-        // 文件名和时间戳属于归档本身的元数据，匿名接口不暴露 —— 页面也不再列清单，
-        // 归档的真实路径见 nginx 侧（文档根之外）。
+        // 归档清单接口：页面本身交给前端渲染，页头页尾就是首页那一份，不再重复实现一遍。
+        // 列表本身是公开的（与上游 notepad.mx 一致）：目录里只有加密后的密文；
+        // 下载开关只控制 files[].url 是否可点（off 时前端不渲染下载入口，
+        // 直链也仍然会在 enableStatic() 被拦成 403）。
         this.app.get('/api/backups', (req: Request, res: Response) => {
 
+            const canDownload = Server.backupsDownloadEnabled();
             const keepDays = Server.archiveKeepDays();
 
-            let latestAt: string | null = null;
-            let total = 0;
+            let files: {name: string, size: number, mtime: Date}[] = [];
 
             try {
-                const names = fs.readdirSync(backupsDir)
-                    // 只数归档本身（archive.tar.gz / archive_YYYYMMDD.tar.gz）：目录里还可能有 .gitignore 之类
-                    .filter((name: string) => Server.isArchiveName(name));
-
-                total = names.length;
-
-                if (total > 0) {
-                    const times = names.map((name: string) => fs.statSync(path.join(backupsDir, name)).mtime.getTime());
-                    latestAt = new Date(Math.max(...times)).toISOString();
-                }
+                files = fs.readdirSync(backupsDir)
+                    .map((name: string) => ({name, full: path.join(backupsDir, name)}))
+                    // 只列归档本身（archive.tar.gz / archive_YYYYMMDD.tar.gz）：目录里还可能有 .gitignore 之类
+                    .filter((f: any) => Server.isArchiveName(f.name))
+                    .filter((f: any) => fs.statSync(f.full).isFile())
+                    .map((f: any) => ({name: f.name, size: fs.statSync(f.full).size, mtime: fs.statSync(f.full).mtime}))
+                    .sort((a: any, b: any) => b.mtime.getTime() - a.mtime.getTime());
             } catch (ex) {
                 // 还没产生过备份（首次归档之前）—— 当作空目录处理
             }
 
             res.set('Cache-Control', NO_STORE);
-            res.json({keepDays, latestAt, total});
+            res.json({
+                downloadable: canDownload,
+                keepDays,
+                total: files.length,
+                totalSize: files.reduce((sum: number, f: any) => sum + f.size, 0),
+                files: files.map((f: any, i: number) => ({
+                    name: f.name,
+                    size: f.size,
+                    time: f.mtime.toISOString(),
+                    latest: i === 0,
+                    url: "/backups/" + encodeURIComponent(f.name)
+                }))
+            });
         });
 
         // 目录页：和首页同一个 HTML 壳子，前端按路径渲染清单
