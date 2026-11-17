@@ -46,7 +46,7 @@ import store from "../store";
 import {SecureStorage} from "../classes/SecureStorage";
 import {t} from "../i18n";
 import {NOTE_MAX_BYTES} from "../config";
-import {begin, update, finish, fail} from "../classes/Progress";
+import {begin, update, finish, fail, dismiss} from "../classes/Progress";
 
 export default {
   data() {
@@ -125,6 +125,8 @@ export default {
       }
     },
     async textKeyUp() {
+      // 常驻的「✓ 保存完成」在用户再次输入时收起（只收已完成态，不影响进行中的保存）
+      dismiss();
       this.writeLater();
     },
     textSelect(event) {
@@ -165,6 +167,9 @@ export default {
     watch(() => store.state.authKey, async (newValue, oldValue) => {
 
       this.isBusy = true;
+
+      // 切换笔记/口令：上一条常驻的保存完成态到此结束
+      dismiss();
 
       const task = begin('read');
 
@@ -237,7 +242,8 @@ export default {
 
   },
   async beforeUnmount() {
-    //await store.actions.saveContents(this.text);
+    // 离开编辑页：收起可能还挂着的保存完成态
+    dismiss();
   }
 }
 </script>

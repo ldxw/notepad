@@ -11,7 +11,9 @@ const _state = reactive({
         value: 0,
         phase: '',
         stage: '',
-        failed: false
+        failed: false,
+        // 操作成功跑完（100%）：完成态常驻时组件用它切「✓ 已保存」样式
+        done: false
     },
 
     // any app error - invalid URL, invalid auth, etc..
@@ -80,7 +82,7 @@ const mutations = {
 
     /**
      * 合并写入进度状态。state 对外是 readonly，只能从这里改。
-     * @param {{visible?: boolean, value?: number, phase?: string, stage?: string, failed?: boolean}} patch
+     * @param {{visible?: boolean, value?: number, phase?: string, stage?: string, failed?: boolean, done?: boolean}} patch
      */
     setProgress: (patch) => {
         Object.assign(_state.progress, patch || {});

@@ -14,6 +14,13 @@ const MIN_VISIBLE = 400;
 // 出错时停留更久：这是用户唯一能察觉保存没成功的信号，一闪而过等于没有。
 const FAIL_VISIBLE = 1200;
 
+// 读取完成的停留时间：读是「进来就看内容」，完成后不用强调，短暂停留即可。
+const READ_DONE_VISIBLE = 900;
+
+// 保存完成的停留时间：完成态是常驻的（不受 MIN_VISIBLE 收条），直到用户
+// 再次输入、切换笔记或离开编辑页才收起；这里只控制收起前最短停留。
+const SAVE_DONE_MIN_VISIBLE = 1400;
+
 // 单次推进的上限：加密收尾到上传完成之间常常是一个大跳（小笔记一下从 80% 到 100%），
 // 直接把宽度改成 100% 看着像卡住后瞬间完成。超过这个幅度就用 rAF 补一段动画。
 const SMOOTH_MIN_JUMP = 0.15;
@@ -130,7 +137,8 @@ function smoothTo(task, to, onDone) {
             value: value,
             phase: task.phase,
             stage: task.stage || '',
-            failed: false
+            failed: false,
+            done: false
         });
     };
 
@@ -183,9 +191,36 @@ function hideAfterMinVisible(task, minVisible) {
         if (current !== task) {
             return;
         }
+
+        // 保存完成态是常驻的：到点只把「可离开」标记翻开，不真的收条；
+        // 真正收起交给 dismiss()（用户再次输入/切笔记/离开编辑页时调用）。
+        if (task.phase === 'save') {
+            task.doneSticky = true;
+            return;
+        }
+
         current = null;
-        set({visible: false, value: 0, phase: '', stage: '', failed: false});
+        set({visible: false, value: 0, phase: '', stage: '', failed: false, done: false});
     }, wait);
+}
+
+/**
+ * 收起常驻的保存完成态。由编辑器在「用户又开始输入 / 切换笔记 / 卸载」时调用；
+ * 没有常驻条时是空操作，不会打断正在进行的读写。
+ */
+export function dismiss() {
+
+    // 任务还没跑完时不收：dismiss 只负责收起常驻完成态/已结束的条子，
+    // 不能把进行中的保存进度静默吞掉。
+    if (current && !current.done) {
+        return;
+    }
+
+    clearTimeout(hideTimer);
+    hideTimer = 0;
+    cancelSmooth();
+    current = null;
+    set({visible: false, value: 0, phase: '', stage: '', failed: false, done: false});
 }
 
 /**
@@ -202,8 +237,9 @@ export function begin(phase) {
     hideTimer = 0;
     cancelSmooth();
 
-    // 上一条还在显示时，新任务直接接管（不重新等 120ms），否则条子会停在
-    // 100% 不动，看着像卡住了。
+    // 新操作开始意味着常驻的保存完成态结束：已完成的旧条不算「进行中」，
+    // 不参与接管，新一轮重新等 SHOW_DELAY 再显示；旧条要么被新条到点
+    // 替换，要么在新操作很快结束（finish 的未显示路径）时被一并收起。
     const takeover = !!(current && current.shown && !current.done);
 
     const task = {
@@ -221,7 +257,7 @@ export function begin(phase) {
 
     if (takeover) {
         shownAt = now();
-        set({visible: true, value: 0, phase: task.phase, stage: '', failed: false});
+        set({visible: true, value: 0, phase: task.phase, stage: '', failed: false, done: false});
         return task;
     }
 
@@ -232,7 +268,7 @@ export function begin(phase) {
         }
         task.shown = true;
         shownAt = now();
-        set({visible: true, value: task.display, phase: task.phase, stage: task.stage || '', failed: false});
+        set({visible: true, value: task.display, phase: task.phase, stage: task.stage || '', failed: false, done: false});
     }, SHOW_DELAY);
 
     return task;
@@ -288,19 +324,20 @@ export function update(task, fraction, stage) {
 
         cancelSmooth();
         task.display = f;
-        set({visible: true, value: f, phase: task.phase, stage: nextStage, failed: false});
+        set({visible: true, value: f, phase: task.phase, stage: nextStage, failed: false, done: false});
         return;
     }
 
     // 进度没动、只换了阶段名：文案也要立刻跟上（下载完切到解密时就是这种）
     if (stageChanged) {
         const shown = typeof task.display === 'number' ? task.display : task.value;
-        set({visible: true, value: shown, phase: task.phase, stage: nextStage, failed: false});
+        set({visible: true, value: shown, phase: task.phase, stage: nextStage, failed: false, done: false});
     }
 }
 
 /**
- * 正常结束：推到 100%，停留满最短可见时间后消失。
+ * 正常结束：推到 100% 进入完成态。读取完成停留一小会儿后收条；保存完成
+ * 是常驻的（「✓ 保存完成」），直到用户再次输入 / 切笔记 / 离开编辑页才收。
  *
  * @param {object} task
  */
@@ -324,7 +361,7 @@ export function finish(task) {
     if (!task.shown) {
         cancelSmooth();
         current = null;
-        set({visible: false, value: 0, phase: '', stage: '', failed: false});
+        set({visible: false, value: 0, phase: '', stage: '', failed: false, done: false});
         return;
     }
 
@@ -335,14 +372,15 @@ export function finish(task) {
     // 操作已经结束，收尾这一段不再属于某个阶段，用通用文案，避免
     // 「上传中 100%」下一秒变成「保存中 100%」的文字跳变。
     task.stage = '';
+    task.doneSticky = false;
 
     const finalize = function () {
         if (current !== task) {
             return;
         }
         task.display = 1;
-        set({visible: true, value: 1, phase: task.phase, stage: '', failed: false});
-        hideAfterMinVisible(task);
+        set({visible: true, value: 1, phase: task.phase, stage: '', failed: false, done: true});
+        hideAfterMinVisible(task, task.phase === 'save' ? SAVE_DONE_MIN_VISIBLE : READ_DONE_VISIBLE);
     };
 
     if (shown >= 1) {
@@ -388,6 +426,6 @@ export function fail(task) {
         shownAt = now();
     }
 
-    set({visible: true, value: value, phase: task.phase, stage: '', failed: true});
+    set({visible: true, value: value, phase: task.phase, stage: '', failed: true, done: false});
     hideAfterMinVisible(task, FAIL_VISIBLE);
 }

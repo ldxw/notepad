@@ -290,6 +290,28 @@ p {
   color: var(--danger);
 }
 
+/* 完成态：保存成功后条子常驻不收（直到再次输入/切笔记），细条保持满宽的
+   accent 色，标签变成「✓ 保存完成」胶囊——这是用户唯一确认「已经存上了」
+   的信号，所以配色从灰字换成 accent，比进行中更显眼。 */
+.note-progress.is-done .note-progress-fill {
+  background-color: var(--accent);
+}
+
+.note-progress.is-done .note-progress-label {
+  top: 5px;
+  padding: 0.1rem 0.55rem;
+  color: var(--accent);
+  background-color: color-mix(in srgb, var(--accent) 10%, var(--header-bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  font-weight: 500;
+}
+
+.note-progress-check {
+  display: inline-block;
+  margin-right: 0.3rem;
+  font-weight: 700;
+}
+
 /* 尊重系统的「减少动态效果」：条子直接出现/消失，宽度也不做动画 */
 @media (prefers-reduced-motion: reduce) {
   .note-progress-enter-active,
