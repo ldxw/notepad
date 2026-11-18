@@ -14,11 +14,11 @@ const MIN_VISIBLE = 400;
 // 出错时停留更久：这是用户唯一能察觉保存没成功的信号，一闪而过等于没有。
 const FAIL_VISIBLE = 1200;
 
-// 读取完成的停留时间：读是「进来就看内容」，完成后不用强调，短暂停留即可。
-const READ_DONE_VISIBLE = 900;
-
-// 保存完成的停留时间：完成态是常驻的（不受 MIN_VISIBLE 收条），直到用户
+// 读取完成的停留时间：完成态是常驻的（不受 MIN_VISIBLE 收条），直到用户
 // 再次输入、切换笔记或离开编辑页才收起；这里只控制收起前最短停留。
+const READ_DONE_MIN_VISIBLE = 900;
+
+// 保存完成的停留时间：同样常驻，只是最短停留比读取长一点（保存更值得确认）。
 const SAVE_DONE_MIN_VISIBLE = 1400;
 
 // 单次推进的上限：加密收尾到上传完成之间常常是一个大跳（小笔记一下从 80% 到 100%），
@@ -192,9 +192,11 @@ function hideAfterMinVisible(task, minVisible) {
             return;
         }
 
-        // 保存完成态是常驻的：到点只把「可离开」标记翻开，不真的收条；
+        // 保存完成/保存失败是常驻的：到点只把「可离开」标记翻开，不真的收条；
         // 真正收起交给 dismiss()（用户再次输入/切笔记/离开编辑页时调用）。
-        if (task.phase === 'save') {
+        // 读取成功态同样常驻（「✓ 加载完成」）；读取失败仍按 FAIL_VISIBLE 自动收起，
+        // 失败态不需要长期占着版面。
+        if (task.phase === 'save' || (task.phase === 'read' && !task.failed)) {
             task.doneSticky = true;
             return;
         }
@@ -205,8 +207,8 @@ function hideAfterMinVisible(task, minVisible) {
 }
 
 /**
- * 收起常驻的保存完成态。由编辑器在「用户又开始输入 / 切换笔记 / 卸载」时调用；
- * 没有常驻条时是空操作，不会打断正在进行的读写。
+ * 收起常驻的完成态（载入完成 / 保存完成）。由编辑器在「用户又开始输入 /
+ * 切换笔记 / 卸载」时调用；没有常驻条时是空操作，不会打断正在进行的读写。
  */
 export function dismiss() {
 
@@ -336,8 +338,8 @@ export function update(task, fraction, stage) {
 }
 
 /**
- * 正常结束：推到 100% 进入完成态。读取完成停留一小会儿后收条；保存完成
- * 是常驻的（「✓ 保存完成」），直到用户再次输入 / 切笔记 / 离开编辑页才收。
+ * 正常结束：推到 100% 进入完成态。读写完成态都是常驻的（「✓ 加载完成」/
+ * 「✓ 保存完成」），直到用户再次输入 / 切笔记 / 离开编辑页才收起。
  *
  * @param {object} task
  */
@@ -359,6 +361,22 @@ export function finish(task) {
     showTimer = 0;
 
     if (!task.shown) {
+        // 读写通常几十毫秒就结束，进度条还没来得及显示（SHOW_DELAY=120ms）。
+        // 但「载入完成 / 保存完成」是用户要的明确反馈，哪怕没显示过进度条
+        // 也要给一次确认：直接置成完成态并常驻，等用户输入/切笔记时再收起。
+        // 小笔记几乎总走这条路，没有它就等于保存从来没反馈过。
+        if (task.phase === 'read') {
+            task.shown = true;
+            shownAt = now();
+            task.value = 1;
+            task.display = 1;
+            task.stage = '';
+            task.doneSticky = false;
+            set({visible: true, value: 1, phase: task.phase, stage: '', failed: false, done: true});
+            hideAfterMinVisible(task, READ_DONE_MIN_VISIBLE);
+            return;
+        }
+
         cancelSmooth();
         current = null;
         set({visible: false, value: 0, phase: '', stage: '', failed: false, done: false});
@@ -380,7 +398,7 @@ export function finish(task) {
         }
         task.display = 1;
         set({visible: true, value: 1, phase: task.phase, stage: '', failed: false, done: true});
-        hideAfterMinVisible(task, task.phase === 'save' ? SAVE_DONE_MIN_VISIBLE : READ_DONE_VISIBLE);
+        hideAfterMinVisible(task, task.phase === 'save' ? SAVE_DONE_MIN_VISIBLE : READ_DONE_MIN_VISIBLE);
     };
 
     if (shown >= 1) {
@@ -405,6 +423,7 @@ export function fail(task) {
     }
 
     task.done = true;
+    task.failed = true;
 
     if (task !== current) {
         return;
