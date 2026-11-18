@@ -365,7 +365,7 @@ export function finish(task) {
         // 但「载入完成 / 保存完成」是用户要的明确反馈，哪怕没显示过进度条
         // 也要给一次确认：直接置成完成态并常驻，等用户输入/切笔记时再收起。
         // 小笔记几乎总走这条路，没有它就等于保存从来没反馈过。
-        if (task.phase === 'read') {
+        if (task.phase === 'read' || task.phase === 'save') {
             task.shown = true;
             shownAt = now();
             task.value = 1;
@@ -373,7 +373,7 @@ export function finish(task) {
             task.stage = '';
             task.doneSticky = false;
             set({visible: true, value: 1, phase: task.phase, stage: '', failed: false, done: true});
-            hideAfterMinVisible(task, READ_DONE_MIN_VISIBLE);
+            hideAfterMinVisible(task, task.phase === 'save' ? SAVE_DONE_MIN_VISIBLE : READ_DONE_MIN_VISIBLE);
             return;
         }
 
