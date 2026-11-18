@@ -11,13 +11,15 @@
                 :placeholder="t('editor.placeholder')" style="resize: none"
                 class="flex-grow"></textarea>
 
-      <!-- 容量条：加密后请求体占上限的比例，贴着状态栏细线展示 -->
-      <div class="capacity-bar" role="progressbar"
-           :aria-valuenow="Math.round(Math.min(payloadSize / maxPayload * 100, 100))"
+      <!-- 容量条：加密后请求体占上限的比例。分 16 格（每格 2MB）显示，
+           整格点亮 + 最后一格按余量部分填充 —— 小笔记也能看出占了格位。 -->
+      <div class="capacity-bar" :class="{'is-full': isTooLong}" role="progressbar"
+           :aria-valuenow="capacityPercent"
            aria-valuemin="0" aria-valuemax="100"
            :aria-label="t('editor.sizeOf', {size: payloadSizeText, max: maxPayloadText})">
-        <div class="capacity-bar-fill" :class="{'is-full': isTooLong}"
-             :style="{width: Math.min(payloadSize / maxPayload * 100, 100) + '%'}"></div>
+        <span v-for="(cell, index) in capacityCells" :key="index" class="capacity-cell">
+          <span class="capacity-cell-fill" :style="{width: cell.ratio + '%'}"></span>
+        </span>
       </div>
 
       <div class="flex justify-between mt-2 mb-5">
@@ -57,6 +59,15 @@ import {t} from "../i18n";
 import {NOTE_MAX_BYTES} from "../config";
 import {begin, update, finish, fail, dismiss} from "../classes/Progress";
 
+// 容量条的分段格数：32MB 上限分 16 格，每格 2MB。
+// 小笔记加密后也就几百字节，比例尺上几乎占不满一格 —— 分格显示让「用了 1 格」
+// 这件事看得见，比一条 0.005px 的细线有用。
+const CAPACITY_CELL_COUNT = 16;
+
+// 未满格里的最小可见填充比例：几百字节在 2MB 一格上是 0.02%，画出来看不见。
+// 只要这一格有内容，就至少点亮 20%，让「存了点东西」这件事表达得出来。
+const CAPACITY_MIN_CELL_FILL = 20;
+
 export default {
   data() {
     return {
@@ -81,6 +92,27 @@ export default {
     },
     maxPayloadText() {
       return TextUtil.humanFileSize(this.maxPayload);
+    },
+    // 占上限的百分比，超限按 100% 截断
+    capacityPercent() {
+      if (!this.maxPayload) {
+        return 0;
+      }
+      return Math.round(Math.min(this.payloadSize / this.maxPayload * 100, 100));
+    },
+    // 分段格：整格点亮 + 最后一格按余量部分填充；最小可见量是 1 格
+    capacityCells() {
+      const total = CAPACITY_CELL_COUNT;
+      const cellBytes = this.maxPayload / total;
+      const cells = [];
+      for (let i = 0; i < total; i++) {
+        const used = this.payloadSize - i * cellBytes;
+        cells.push({
+          ratio: used <= 0 ? 0 : (used >= cellBytes ? 100
+              : Math.max(CAPACITY_MIN_CELL_FILL, Math.round(used / cellBytes * 100)))
+        });
+      }
+      return cells;
     }
   },
   watch: {

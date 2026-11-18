@@ -242,24 +242,34 @@ p {
   font-weight: 700;
 }
 
-/* 容量条：加密后体积相对上限的比例，贴在状态栏上方一条 4px 细线。
-   平时低调（淡底、正文字色），超限转红——与状态栏的 size-bar-full
-   和 limit-warning 同一套语义。 */
+/* 容量条：加密后体积相对上限的比例，贴在状态栏上方。
+   分 16 格（每格 2MB），像存储槽位——整格点亮，最后一格按余量部分填充。
+   小笔记只占一格也看得见，比一条几乎为 0 宽度的连续细线有用。
+   平时低调（空槽淡灰、已用正文字色），超限整条转红——与状态栏的
+   size-bar-full 和 limit-warning 同一套语义。 */
 .capacity-bar {
-  height: 4px;
-  border-radius: 999px;
-  background-color: color-mix(in srgb, var(--border) 70%, transparent);
+  display: flex;
+  gap: 2px;
+  height: 6px;
+}
+
+.capacity-cell {
+  position: relative;
+  flex: 1 1 0;
+  height: 100%;
+  background-color: color-mix(in srgb, var(--border) 55%, transparent);
   overflow: hidden;
 }
 
-.capacity-bar-fill {
+.capacity-cell-fill {
+  display: block;
   height: 100%;
   width: 0;
   background-color: var(--text);
   transition: width .2s ease;
 }
 
-.capacity-bar-fill.is-full {
+.capacity-bar.is-full .capacity-cell-fill {
   background-color: var(--danger);
 }
 
